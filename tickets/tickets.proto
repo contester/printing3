@@ -1,0 +1,37 @@
+package tickets;
+
+message Ticket {
+    message Submit {
+        message School {
+            optional uint32 tests_taken = 1;
+            optional uint32 tests_passed = 2;
+        }
+
+        message ACM {
+            optional string result = 1; // replace with uint32 and map
+            optional uint32 test_id = 2;
+        }
+
+        optional uint32 submit_number = 1;
+        optional uint32 arrived = 2;
+        optional bool compiled = 3;
+        optional School school = 4;
+        optional ACM acm = 5;
+    }
+
+    optional uint32 contest_id = 1;
+    optional string contest_name = 2;
+    optional uint32 submit_id = 3;
+    optional string judge_time = 4; // replace with uint64 proper
+    optional uint32 team_id = 5;
+    optional string team_name = 6;
+    optional uint32 location_id = 7;
+    optional string location_name = 8;
+    optional string computer_id = 9; // replace with fixed32
+    optional string computer_name = 10;
+    optional string problem_id = 11;
+    optional string problem_name = 12;
+
+    repeated Submit submit = 13;
+    optional string printer = 14; // string now, replace with id
+}
