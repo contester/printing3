@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"flag"
+	"fmt"
 
 	"code.google.com/p/goconf/conf"
 	"code.google.com/p/log4go"
@@ -14,7 +15,7 @@ import (
 )
 
 func createDb(spec string) (db *sql.DB, err error) {
-	if db, err = sql.Open("mysql", spec); err != nil {
+	if db, err = sql.Open("mysql", spec + "?parseTime=true"); err != nil {
 		return
 	}
 	if err = db.Ping(); err != nil {
@@ -34,16 +35,16 @@ Problems.Name as ProblemName, inet_ntoa(Submits.Computer) as ComputerID, CompLoc
 Areas.ID as AreaID, Areas.Name as AreaName
 from Submits, Contests, Areas, CompLocations, Teams, Schools, Participants, Problems
 where
-Contests.ID = Submit.Contest and Submits.Finished and ` + extraWhere + `
+Contests.ID = Submits.Contest and Submits.Finished and ` + extraWhere + `
 Submits.Computer = CompLocations.ID and CompLocations.Location = Areas.ID and Participants.LocalID = Submits.Team
-Teams.ID = Participants.Team and Participants.Contest = Submits.Contest and Teams.School = Schools.ID and
+and Teams.ID = Participants.Team and Participants.Contest = Submits.Contest and Teams.School = Schools.ID and
 Problems.Contest = Submits.Contest and Problems.ID = Submits.Task and Contests.PrintTickets = 1 and Areas.Printer is not NULL
 order by Submits.Touched asc
 `
 }
 
 var (
-	allSubmitsQuery = createSelectSubmitQuery("((Submits.Printed is null) or (Submits.Printed < a.Touched)),")
+	allSubmitsQuery = createSelectSubmitQuery("((Submits.Printed is null) or (Submits.Printed < Submits.Touched)) and")
 	relatedSubmitsQuery = createSelectSubmitQuery("Submits.Contest = ? and Submits.Task = ? and Submits.Team = ?")
 )
 
@@ -62,7 +63,7 @@ type scannedSubmit struct {
 }
 
 type rowOrRows interface {
-	Scan(dest interface{}) error
+	Scan(dest ...interface{}) error
 }
 
 func scanSubmit(r rowOrRows) (*scannedSubmit, error) {
@@ -86,11 +87,15 @@ func processSubmit(sub *scannedSubmit) {
 func scan(db *sql.DB) {
 	rows, err := db.Query(allSubmitsQuery)
 	if err != nil {
+		fmt.Printf("Error in submit: %s", err)
+		log4go.Error("Error in submit: %s", err)
 		return
 	}
 	for rows.Next() {
 		sub, _ := scanSubmit(rows)
+		fmt.Println(sub)
 		if sub != nil {
+
 			processSubmit(sub)
 		}
 	}
@@ -102,7 +107,7 @@ func main() {
 
 	configFileName := flag.String("config", "", "")
 	dbSpec := flag.String("db", "", "")
-	stompSpec := flag.String("messaging", "", "")
+	//stompSpec := flag.String("messaging", "", "")
 
 	flag.Parse()
 

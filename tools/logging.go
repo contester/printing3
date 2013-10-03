@@ -13,7 +13,7 @@ func (lw *lwrapper) Write(p []byte) (n int, err error) {
 }
 
 func SetupLogWrapper() {
-	log4go.Global = log4go.NewDefaultLogger(log4go.FINEST)
+	// log4go.Global = log4go.NewDefaultLogger(log4go.FINEST)
 	lw := &lwrapper{}
 	log.SetOutput(lw)
 }
