@@ -2,15 +2,15 @@ package main
 
 import (
 	"database/sql"
-	"strings"
-	"net"
 	"flag"
-	"net/http"
 
 	"code.google.com/p/goconf/conf"
 	"code.google.com/p/log4go"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/contester/printing3/tools"
+	"time"
+	"encoding/json"
 )
 
 func createDb(spec string) (db *sql.DB, err error) {
@@ -24,27 +24,76 @@ func createDb(spec string) (db *sql.DB, err error) {
 	return
 }
 
-const SELECT_QUERY = `select
-a.Contest, a.Team, a.Touched, a.Task, a.Compiled,
-(unix_timestamp(a.Arrived) - unix_timestamp(Contests.Start)) as Arrived,
-a.Passed, a.Taken, a.ID, count(b.ID) as SubmitNo, Areas.Printer,
-Contests.SchoolMode, a.TestingID, Schools.Name, Teams.Num,
-Contests.Name as ContestName, Problems.Name as ProblemName,
-inet_ntoa(a.Computer) as ComputerID, CompLocations.Name as ComputerName,
+func createSelectSubmitQuery(extraWhere string) string {
+	return `select
+Submits.Contest, Submits.Team, Submits.Touched, Submits.Task, Submits.Compiled,
+(unix_timestamp(Submits.Arrived) - unix_timestamp(Contests.Start)) as Arrived,
+Submits.Passed, Submits.Taken, Submits.ID, Areas.Printer, Contests.SchoolMode, Submits.TestingID,
+Schools.Name, Teams.Num, Contests.Name as ContestName,
+Problems.Name as ProblemName, inet_ntoa(Submits.Computer) as ComputerID, CompLocations.Name as ComputerName,
 Areas.ID as AreaID, Areas.Name as AreaName
-from
-Submits as a, Submits as b, Contests, Areas, CompLocations, Teams, Schools, Participants, Problems
-Contests.ID = a.Contest, a.Finished, a.Contest = b.Contest, a.Team = b.Team,
-a.Task = b.Task, b.Arrived <= a.Arrived, ((a.Printed is null) or (a.Printed < a.Touched)),
-a.Computer = CompLocations.ID, CompLocations.Location = Areas.ID, Participants.LocalID = a.Team,
-Teams.ID = Participants.Team, Participants.Contest = a.Contest, Teams.School = Schools.ID,
-Problems.Contest = a.Contest, Problems.ID = a.Task, Contests.PrintTickets = 1, Areas.Printer is not NULL
-group by a.Task, a.Compiled, a.Arrived, a.Passed, a.Taken, a.ID
-order by a.Touched asc
+from Submits, Contests, Areas, CompLocations, Teams, Schools, Participants, Problems
+where
+Contests.ID = Submit.Contest and Submits.Finished and ` + extraWhere + `
+Submits.Computer = CompLocations.ID and CompLocations.Location = Areas.ID and Participants.LocalID = Submits.Team
+Teams.ID = Participants.Team and Participants.Contest = Submits.Contest and Teams.School = Schools.ID and
+Problems.Contest = Submits.Contest and Problems.ID = Submits.Task and Contests.PrintTickets = 1 and Areas.Printer is not NULL
+order by Submits.Touched asc
 `
+}
+
+var (
+	allSubmitsQuery = createSelectSubmitQuery("((Submits.Printed is null) or (Submits.Printed < a.Touched)),")
+	relatedSubmitsQuery = createSelectSubmitQuery("Submits.Contest = ? and Submits.Task = ? and Submits.Team = ?")
+)
+
+type scannedSubmit struct {
+	Contest, Team int64
+	Touched time.Time
+	Task string
+	Compiled, Arrived, Passed, Taken, ID int64
+	Printer string
+	SchoolMode, TestingID int64
+	SchoolName string
+	TeamNum sql.NullInt64
+	ContestName, ProblemName, ComputerID, ComputerName string
+	AreaID int64
+	AreaName string
+}
+
+type rowOrRows interface {
+	Scan(dest interface{}) error
+}
+
+func scanSubmit(r rowOrRows) (*scannedSubmit, error) {
+	var sub scannedSubmit
+	err := r.Scan(&sub.Contest, &sub.Team, &sub.Touched, &sub.Task, &sub.Compiled, &sub.Arrived, &sub.Passed,
+		&sub.Taken, &sub.ID, &sub.Printer, &sub.SchoolMode, &sub.TestingID, &sub.SchoolName, &sub.TeamNum,
+		&sub.ContestName, &sub.ProblemName, &sub.ComputerID, &sub.ComputerName, &sub.AreaID, &sub.AreaName)
+	if err != nil {
+		log4go.Error("Error when scanning: %s", err)
+		return nil, err
+	}
+	return &sub, nil
+}
+
+func processSubmit(sub *scannedSubmit) {
+	if b, err := json.MarshalIndent(sub, "", "  "); err == nil {
+		log4go.Info("%s", string(b))
+	}
+}
 
 func scan(db *sql.DB) {
-	db.QueryRow()
+	rows, err := db.Query(allSubmitsQuery)
+	if err != nil {
+		return
+	}
+	for rows.Next() {
+		sub, _ := scanSubmit(rows)
+		if sub != nil {
+			processSubmit(sub)
+		}
+	}
 }
 
 func main() {
@@ -75,4 +124,6 @@ func main() {
 		log4go.Exitf("Opening db connection to %s: %s", *dbSpec, err)
 		return
 	}
+
+	scan(db)
 }
