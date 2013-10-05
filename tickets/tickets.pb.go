@@ -13,21 +13,64 @@ var _ = proto.Marshal
 var _ = &json.SyntaxError{}
 var _ = math.Inf
 
+type IdName struct {
+	Id               *uint32 `protobuf:"varint,1,opt,name=id" json:"id,omitempty"`
+	Name             *string `protobuf:"bytes,2,opt,name=name" json:"name,omitempty"`
+	XXX_unrecognized []byte  `json:"-"`
+}
+
+func (m *IdName) Reset()         { *m = IdName{} }
+func (m *IdName) String() string { return proto.CompactTextString(m) }
+func (*IdName) ProtoMessage()    {}
+
+func (m *IdName) GetId() uint32 {
+	if m != nil && m.Id != nil {
+		return *m.Id
+	}
+	return 0
+}
+
+func (m *IdName) GetName() string {
+	if m != nil && m.Name != nil {
+		return *m.Name
+	}
+	return ""
+}
+
+type Computer struct {
+	Id               *string `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
+	Name             *string `protobuf:"bytes,2,opt,name=name" json:"name,omitempty"`
+	XXX_unrecognized []byte  `json:"-"`
+}
+
+func (m *Computer) Reset()         { *m = Computer{} }
+func (m *Computer) String() string { return proto.CompactTextString(m) }
+func (*Computer) ProtoMessage()    {}
+
+func (m *Computer) GetId() string {
+	if m != nil && m.Id != nil {
+		return *m.Id
+	}
+	return ""
+}
+
+func (m *Computer) GetName() string {
+	if m != nil && m.Name != nil {
+		return *m.Name
+	}
+	return ""
+}
+
 type Ticket struct {
-	ContestId        *uint32          `protobuf:"varint,1,opt,name=contest_id" json:"contest_id,omitempty"`
-	ContestName      *string          `protobuf:"bytes,2,opt,name=contest_name" json:"contest_name,omitempty"`
-	SubmitId         *uint32          `protobuf:"varint,3,opt,name=submit_id" json:"submit_id,omitempty"`
-	JudgeTime        *string          `protobuf:"bytes,4,opt,name=judge_time" json:"judge_time,omitempty"`
-	TeamId           *uint32          `protobuf:"varint,5,opt,name=team_id" json:"team_id,omitempty"`
-	TeamName         *string          `protobuf:"bytes,6,opt,name=team_name" json:"team_name,omitempty"`
-	LocationId       *uint32          `protobuf:"varint,7,opt,name=location_id" json:"location_id,omitempty"`
-	LocationName     *string          `protobuf:"bytes,8,opt,name=location_name" json:"location_name,omitempty"`
-	ComputerId       *string          `protobuf:"bytes,9,opt,name=computer_id" json:"computer_id,omitempty"`
-	ComputerName     *string          `protobuf:"bytes,10,opt,name=computer_name" json:"computer_name,omitempty"`
-	ProblemId        *string          `protobuf:"bytes,11,opt,name=problem_id" json:"problem_id,omitempty"`
-	ProblemName      *string          `protobuf:"bytes,12,opt,name=problem_name" json:"problem_name,omitempty"`
-	Submit           []*Ticket_Submit `protobuf:"bytes,13,rep,name=submit" json:"submit,omitempty"`
-	Printer          *string          `protobuf:"bytes,14,opt,name=printer" json:"printer,omitempty"`
+	Contest          *IdName          `protobuf:"bytes,1,opt,name=contest" json:"contest,omitempty"`
+	Team             *IdName          `protobuf:"bytes,2,opt,name=team" json:"team,omitempty"`
+	Area             *IdName          `protobuf:"bytes,3,opt,name=area" json:"area,omitempty"`
+	Computer         *Computer        `protobuf:"bytes,4,opt,name=computer" json:"computer,omitempty"`
+	Problem          *Ticket_Problem  `protobuf:"bytes,5,opt,name=problem" json:"problem,omitempty"`
+	SubmitId         *uint32          `protobuf:"varint,6,opt,name=submit_id" json:"submit_id,omitempty"`
+	JudgeTime        *uint64          `protobuf:"varint,7,opt,name=judge_time" json:"judge_time,omitempty"`
+	Submit           []*Ticket_Submit `protobuf:"bytes,8,rep,name=submit" json:"submit,omitempty"`
+	Printer          *string          `protobuf:"bytes,9,opt,name=printer" json:"printer,omitempty"`
 	XXX_unrecognized []byte           `json:"-"`
 }
 
@@ -35,18 +78,39 @@ func (m *Ticket) Reset()         { *m = Ticket{} }
 func (m *Ticket) String() string { return proto.CompactTextString(m) }
 func (*Ticket) ProtoMessage()    {}
 
-func (m *Ticket) GetContestId() uint32 {
-	if m != nil && m.ContestId != nil {
-		return *m.ContestId
+func (m *Ticket) GetContest() *IdName {
+	if m != nil {
+		return m.Contest
 	}
-	return 0
+	return nil
 }
 
-func (m *Ticket) GetContestName() string {
-	if m != nil && m.ContestName != nil {
-		return *m.ContestName
+func (m *Ticket) GetTeam() *IdName {
+	if m != nil {
+		return m.Team
 	}
-	return ""
+	return nil
+}
+
+func (m *Ticket) GetArea() *IdName {
+	if m != nil {
+		return m.Area
+	}
+	return nil
+}
+
+func (m *Ticket) GetComputer() *Computer {
+	if m != nil {
+		return m.Computer
+	}
+	return nil
+}
+
+func (m *Ticket) GetProblem() *Ticket_Problem {
+	if m != nil {
+		return m.Problem
+	}
+	return nil
 }
 
 func (m *Ticket) GetSubmitId() uint32 {
@@ -56,67 +120,11 @@ func (m *Ticket) GetSubmitId() uint32 {
 	return 0
 }
 
-func (m *Ticket) GetJudgeTime() string {
+func (m *Ticket) GetJudgeTime() uint64 {
 	if m != nil && m.JudgeTime != nil {
 		return *m.JudgeTime
 	}
-	return ""
-}
-
-func (m *Ticket) GetTeamId() uint32 {
-	if m != nil && m.TeamId != nil {
-		return *m.TeamId
-	}
 	return 0
-}
-
-func (m *Ticket) GetTeamName() string {
-	if m != nil && m.TeamName != nil {
-		return *m.TeamName
-	}
-	return ""
-}
-
-func (m *Ticket) GetLocationId() uint32 {
-	if m != nil && m.LocationId != nil {
-		return *m.LocationId
-	}
-	return 0
-}
-
-func (m *Ticket) GetLocationName() string {
-	if m != nil && m.LocationName != nil {
-		return *m.LocationName
-	}
-	return ""
-}
-
-func (m *Ticket) GetComputerId() string {
-	if m != nil && m.ComputerId != nil {
-		return *m.ComputerId
-	}
-	return ""
-}
-
-func (m *Ticket) GetComputerName() string {
-	if m != nil && m.ComputerName != nil {
-		return *m.ComputerName
-	}
-	return ""
-}
-
-func (m *Ticket) GetProblemId() string {
-	if m != nil && m.ProblemId != nil {
-		return *m.ProblemId
-	}
-	return ""
-}
-
-func (m *Ticket) GetProblemName() string {
-	if m != nil && m.ProblemName != nil {
-		return *m.ProblemName
-	}
-	return ""
 }
 
 func (m *Ticket) GetSubmit() []*Ticket_Submit {
@@ -135,7 +143,7 @@ func (m *Ticket) GetPrinter() string {
 
 type Ticket_Submit struct {
 	SubmitNumber     *uint32               `protobuf:"varint,1,opt,name=submit_number" json:"submit_number,omitempty"`
-	Arrived          *uint32               `protobuf:"varint,2,opt,name=arrived" json:"arrived,omitempty"`
+	Arrived          *uint64               `protobuf:"varint,2,opt,name=arrived" json:"arrived,omitempty"`
 	Compiled         *bool                 `protobuf:"varint,3,opt,name=compiled" json:"compiled,omitempty"`
 	School           *Ticket_Submit_School `protobuf:"bytes,4,opt,name=school" json:"school,omitempty"`
 	Acm              *Ticket_Submit_ACM    `protobuf:"bytes,5,opt,name=acm" json:"acm,omitempty"`
@@ -153,7 +161,7 @@ func (m *Ticket_Submit) GetSubmitNumber() uint32 {
 	return 0
 }
 
-func (m *Ticket_Submit) GetArrived() uint32 {
+func (m *Ticket_Submit) GetArrived() uint64 {
 	if m != nil && m.Arrived != nil {
 		return *m.Arrived
 	}
@@ -227,6 +235,30 @@ func (m *Ticket_Submit_ACM) GetTestId() uint32 {
 		return *m.TestId
 	}
 	return 0
+}
+
+type Ticket_Problem struct {
+	Id               *string `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
+	Name             *string `protobuf:"bytes,2,opt,name=name" json:"name,omitempty"`
+	XXX_unrecognized []byte  `json:"-"`
+}
+
+func (m *Ticket_Problem) Reset()         { *m = Ticket_Problem{} }
+func (m *Ticket_Problem) String() string { return proto.CompactTextString(m) }
+func (*Ticket_Problem) ProtoMessage()    {}
+
+func (m *Ticket_Problem) GetId() string {
+	if m != nil && m.Id != nil {
+		return *m.Id
+	}
+	return ""
+}
+
+func (m *Ticket_Problem) GetName() string {
+	if m != nil && m.Name != nil {
+		return *m.Name
+	}
+	return ""
 }
 
 func init() {

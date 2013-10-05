@@ -4,23 +4,25 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
+	"log"
 
 	"code.google.com/p/goconf/conf"
 	"code.google.com/p/log4go"
+	"github.com/jmoiron/sqlx"
+
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/contester/printing3/tools"
+	"github.com/contester/printing3/tickets"
 	"time"
 	"encoding/json"
+	"code.google.com/p/goprotobuf/proto"
+	"strconv"
 )
 
-func createDb(spec string) (db *sql.DB, err error) {
-	if db, err = sql.Open("mysql", spec + "?parseTime=true"); err != nil {
+func createDb(spec string) (db *sqlx.DB, err error) {
+	if db, err = sqlx.Connect("mysql", spec + "?parseTime=true&charset=utf8mb4,utf8"); err != nil {
 		return
-	}
-	if err = db.Ping(); err != nil {
-		db.Close()
-		return nil, err
 	}
 	return
 }
@@ -39,14 +41,18 @@ Contests.ID = Submits.Contest and Submits.Finished and ` + extraWhere + `
 Submits.Computer = CompLocations.ID and CompLocations.Location = Areas.ID and Participants.LocalID = Submits.Team
 and Teams.ID = Participants.Team and Participants.Contest = Submits.Contest and Teams.School = Schools.ID and
 Problems.Contest = Submits.Contest and Problems.ID = Submits.Task and Contests.PrintTickets = 1 and Areas.Printer is not NULL
-order by Submits.Touched asc
+order by Submits.Arrived asc
 `
 }
 
 var (
 	allSubmitsQuery = createSelectSubmitQuery("((Submits.Printed is null) or (Submits.Printed < Submits.Touched)) and")
-	relatedSubmitsQuery = createSelectSubmitQuery("Submits.Contest = ? and Submits.Task = ? and Submits.Team = ?")
+	relatedSubmitsQuery = createSelectSubmitQuery("Submits.Contest = ? and Submits.Task = ? and Submits.Team = ? and Submits.ID < ? and")
 )
+
+type submitProcessor struct {
+	db *sqlx.DB
+}
 
 type scannedSubmit struct {
 	Contest, Team int64
@@ -78,25 +84,105 @@ func scanSubmit(r rowOrRows) (*scannedSubmit, error) {
 	return &sub, nil
 }
 
-func processSubmit(sub *scannedSubmit) {
-	if b, err := json.MarshalIndent(sub, "", "  "); err == nil {
-		log4go.Info("%s", string(b))
-	}
+type submitDetails struct {
+	Description string
+	Test int64
 }
 
-func scan(db *sql.DB) {
-	rows, err := db.Query(allSubmitsQuery)
+func findRelatedSubmits(db *sqlx.DB, sub *scannedSubmit) ([]*scannedSubmit, error) {
+	rows, err := db.Query(relatedSubmitsQuery, sub.Contest, sub.Task, sub.Team, sub.ID)
 	if err != nil {
-		fmt.Printf("Error in submit: %s", err)
+		log4go.Error("Error scanning for related submits: %s", err)
+		return nil, err
+	}
+
+	result := make([]*scannedSubmit, 0)
+
+	for rows.Next() {
+		s, _ := scanSubmit(rows)
+		if s != nil {
+			result = append(result, s)
+		}
+	}
+
+	return result, nil
+}
+
+func (s *submitProcessor) createSubmit(sub *scannedSubmit, submitNo int) *tickets.Ticket_Submit {
+	var result tickets.Ticket_Submit
+	result.SubmitNumber = proto.Uint32(uint32(submitNo))
+	if sub.Arrived > 0 {
+		result.Arrived = proto.Uint64(uint64(sub.Arrived))
+	}
+	if result.Compiled = proto.Bool(sub.Compiled == 1); !result.GetCompiled() {
+		return &result
+	}
+	if sub.SchoolMode != 0 {
+		result.School = &tickets.Ticket_Submit_School{TestsTaken: proto.Uint32(uint32(sub.Taken)), TestsPassed: proto.Uint32(uint32(sub.Passed)),}
+	} else {
+		var description string
+		var test int64
+		err := s.db.QueryRow("select ResultDesc.Description, Results.Test from Results, ResultDesc where " +
+					"Results.UID = ? and ResultDesc.ID = Results.Result and not ResultDesc.Success order by Result.Test",
+			sub.TestingID).Scan(&description, &test)
+		switch {
+		case err == sql.ErrNoRows:
+			if sub.Passed != 0 && sub.Passed == sub.Taken {
+				result.Acm = &tickets.Ticket_Submit_ACM{Result: proto.String("ACCEPTED")}
+			}
+		case err != nil:
+			log.Fatal(err)
+			return nil
+		default:
+			result.Acm = &tickets.Ticket_Submit_ACM{Result: &description, TestId: proto.Uint32(uint32(test)),}
+		}
+	}
+	return &result
+}
+
+func (s *submitProcessor) processSubmit(sub *scannedSubmit) {
+	related, err := findRelatedSubmits(s.db, sub)
+	if err != nil {
+		return
+	}
+
+	var result tickets.Ticket
+
+	result.SubmitId = proto.Uint32(uint32(sub.ID))
+	result.Printer = &sub.Printer
+	result.Computer = &tickets.Computer{Id: &sub.ComputerID, Name: &sub.ComputerName,}
+	result.Area = &tickets.IdName{Id: proto.Uint32(uint32(sub.AreaID)), Name: &sub.AreaName,}
+	result.Contest = &tickets.IdName{Id: proto.Uint32(uint32(sub.Contest)), Name: &sub.ContestName,}
+	result.Problem = &tickets.Ticket_Problem{Id: &sub.Task, Name: &sub.ProblemName,}
+
+	teamName := sub.SchoolName
+	if sub.TeamNum.Valid && sub.TeamNum.Int64 > 0 {
+		teamName = teamName + " #" + strconv.FormatInt(sub.TeamNum.Int64, 10)
+	}
+	result.Team = &tickets.IdName{Id: proto.Uint32(uint32(sub.Team)), Name: &teamName,}
+	result.JudgeTime = proto.Uint64(uint64(sub.Touched.UnixNano()))
+
+	result.Submit = make([]*tickets.Ticket_Submit, 0)
+	result.Submit = append(result.Submit, s.createSubmit(sub, len(related) + 1))
+	for count := len(related); count > 0; {
+		count -= 1
+		result.Submit = append(result.Submit, s.createSubmit(related[count], count))
+	}
+
+	b, _ := json.MarshalIndent(result, "", "  ")
+	fmt.Println(string(b))
+}
+
+func (s *submitProcessor) scan() {
+	rows, err := s.db.Query(allSubmitsQuery)
+	if err != nil {
 		log4go.Error("Error in submit: %s", err)
 		return
 	}
 	for rows.Next() {
 		sub, _ := scanSubmit(rows)
-		fmt.Println(sub)
 		if sub != nil {
-
-			processSubmit(sub)
+			s.processSubmit(sub)
 		}
 	}
 }
@@ -124,11 +210,14 @@ func main() {
 		}
 	}
 
-	db, err := createDb(*dbSpec)
+	var srv submitProcessor
+	var err error
+
+	srv.db, err = createDb(*dbSpec)
 	if err != nil {
 		log4go.Exitf("Opening db connection to %s: %s", *dbSpec, err)
 		return
 	}
 
-	scan(db)
+	srv.scan()
 }
