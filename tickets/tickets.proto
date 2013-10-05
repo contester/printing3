@@ -1,5 +1,39 @@
 package tickets;
 
+message Blob {
+    message CompressionInfo {
+        enum CompressionType {
+            METHOD_NONE = 0;
+            METHOD_ZLIB = 1;
+        }
+
+        optional CompressionType method = 1;
+        optional uint32 original_size = 2;
+    }
+
+    optional bytes data = 1;
+    optional CompressionInfo compression = 2;
+    optional bytes sha1 = 3;
+};
+
+message PrintJob {
+    optional string filename = 1;
+    optional IdName contest = 2;
+    optional IdName team = 3;
+    optional Computer computer = 4;
+    optional IdName area = 5;
+    optional Blob data = 6;
+    optional uint64 timestamp = 7;
+    optional string printer = 8;
+    optional uint32 job_id = 9;
+};
+
+message BinaryJob {
+    optional string printer = 1;
+    optional Blob data = 2;
+    optional string job_id = 3;
+};
+
 message IdName {
     optional uint32 id = 1;
     optional string name = 2;

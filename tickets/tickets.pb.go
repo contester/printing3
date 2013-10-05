@@ -13,6 +13,210 @@ var _ = proto.Marshal
 var _ = &json.SyntaxError{}
 var _ = math.Inf
 
+type Blob_CompressionInfo_CompressionType int32
+
+const (
+	Blob_CompressionInfo_METHOD_NONE Blob_CompressionInfo_CompressionType = 0
+	Blob_CompressionInfo_METHOD_ZLIB Blob_CompressionInfo_CompressionType = 1
+)
+
+var Blob_CompressionInfo_CompressionType_name = map[int32]string{
+	0: "METHOD_NONE",
+	1: "METHOD_ZLIB",
+}
+var Blob_CompressionInfo_CompressionType_value = map[string]int32{
+	"METHOD_NONE": 0,
+	"METHOD_ZLIB": 1,
+}
+
+func (x Blob_CompressionInfo_CompressionType) Enum() *Blob_CompressionInfo_CompressionType {
+	p := new(Blob_CompressionInfo_CompressionType)
+	*p = x
+	return p
+}
+func (x Blob_CompressionInfo_CompressionType) String() string {
+	return proto.EnumName(Blob_CompressionInfo_CompressionType_name, int32(x))
+}
+func (x Blob_CompressionInfo_CompressionType) MarshalJSON() ([]byte, error) {
+	return json.Marshal(x.String())
+}
+func (x *Blob_CompressionInfo_CompressionType) UnmarshalJSON(data []byte) error {
+	value, err := proto.UnmarshalJSONEnum(Blob_CompressionInfo_CompressionType_value, data, "Blob_CompressionInfo_CompressionType")
+	if err != nil {
+		return err
+	}
+	*x = Blob_CompressionInfo_CompressionType(value)
+	return nil
+}
+
+type Blob struct {
+	Data             []byte                `protobuf:"bytes,1,opt,name=data" json:"data,omitempty"`
+	Compression      *Blob_CompressionInfo `protobuf:"bytes,2,opt,name=compression" json:"compression,omitempty"`
+	Sha1             []byte                `protobuf:"bytes,3,opt,name=sha1" json:"sha1,omitempty"`
+	XXX_unrecognized []byte                `json:"-"`
+}
+
+func (m *Blob) Reset()         { *m = Blob{} }
+func (m *Blob) String() string { return proto.CompactTextString(m) }
+func (*Blob) ProtoMessage()    {}
+
+func (m *Blob) GetData() []byte {
+	if m != nil {
+		return m.Data
+	}
+	return nil
+}
+
+func (m *Blob) GetCompression() *Blob_CompressionInfo {
+	if m != nil {
+		return m.Compression
+	}
+	return nil
+}
+
+func (m *Blob) GetSha1() []byte {
+	if m != nil {
+		return m.Sha1
+	}
+	return nil
+}
+
+type Blob_CompressionInfo struct {
+	Method           *Blob_CompressionInfo_CompressionType `protobuf:"varint,1,opt,name=method,enum=tickets.Blob_CompressionInfo_CompressionType" json:"method,omitempty"`
+	OriginalSize     *uint32                               `protobuf:"varint,2,opt,name=original_size" json:"original_size,omitempty"`
+	XXX_unrecognized []byte                                `json:"-"`
+}
+
+func (m *Blob_CompressionInfo) Reset()         { *m = Blob_CompressionInfo{} }
+func (m *Blob_CompressionInfo) String() string { return proto.CompactTextString(m) }
+func (*Blob_CompressionInfo) ProtoMessage()    {}
+
+func (m *Blob_CompressionInfo) GetMethod() Blob_CompressionInfo_CompressionType {
+	if m != nil && m.Method != nil {
+		return *m.Method
+	}
+	return 0
+}
+
+func (m *Blob_CompressionInfo) GetOriginalSize() uint32 {
+	if m != nil && m.OriginalSize != nil {
+		return *m.OriginalSize
+	}
+	return 0
+}
+
+type PrintJob struct {
+	Filename         *string   `protobuf:"bytes,1,opt,name=filename" json:"filename,omitempty"`
+	Contest          *IdName   `protobuf:"bytes,2,opt,name=contest" json:"contest,omitempty"`
+	Team             *IdName   `protobuf:"bytes,3,opt,name=team" json:"team,omitempty"`
+	Computer         *Computer `protobuf:"bytes,4,opt,name=computer" json:"computer,omitempty"`
+	Area             *IdName   `protobuf:"bytes,5,opt,name=area" json:"area,omitempty"`
+	Data             *Blob     `protobuf:"bytes,6,opt,name=data" json:"data,omitempty"`
+	Timestamp        *uint64   `protobuf:"varint,7,opt,name=timestamp" json:"timestamp,omitempty"`
+	Printer          *string   `protobuf:"bytes,8,opt,name=printer" json:"printer,omitempty"`
+	JobId            *uint32   `protobuf:"varint,9,opt,name=job_id" json:"job_id,omitempty"`
+	XXX_unrecognized []byte    `json:"-"`
+}
+
+func (m *PrintJob) Reset()         { *m = PrintJob{} }
+func (m *PrintJob) String() string { return proto.CompactTextString(m) }
+func (*PrintJob) ProtoMessage()    {}
+
+func (m *PrintJob) GetFilename() string {
+	if m != nil && m.Filename != nil {
+		return *m.Filename
+	}
+	return ""
+}
+
+func (m *PrintJob) GetContest() *IdName {
+	if m != nil {
+		return m.Contest
+	}
+	return nil
+}
+
+func (m *PrintJob) GetTeam() *IdName {
+	if m != nil {
+		return m.Team
+	}
+	return nil
+}
+
+func (m *PrintJob) GetComputer() *Computer {
+	if m != nil {
+		return m.Computer
+	}
+	return nil
+}
+
+func (m *PrintJob) GetArea() *IdName {
+	if m != nil {
+		return m.Area
+	}
+	return nil
+}
+
+func (m *PrintJob) GetData() *Blob {
+	if m != nil {
+		return m.Data
+	}
+	return nil
+}
+
+func (m *PrintJob) GetTimestamp() uint64 {
+	if m != nil && m.Timestamp != nil {
+		return *m.Timestamp
+	}
+	return 0
+}
+
+func (m *PrintJob) GetPrinter() string {
+	if m != nil && m.Printer != nil {
+		return *m.Printer
+	}
+	return ""
+}
+
+func (m *PrintJob) GetJobId() uint32 {
+	if m != nil && m.JobId != nil {
+		return *m.JobId
+	}
+	return 0
+}
+
+type BinaryJob struct {
+	Printer          *string `protobuf:"bytes,1,opt,name=printer" json:"printer,omitempty"`
+	Data             *Blob   `protobuf:"bytes,2,opt,name=data" json:"data,omitempty"`
+	JobId            *string `protobuf:"bytes,3,opt,name=job_id" json:"job_id,omitempty"`
+	XXX_unrecognized []byte  `json:"-"`
+}
+
+func (m *BinaryJob) Reset()         { *m = BinaryJob{} }
+func (m *BinaryJob) String() string { return proto.CompactTextString(m) }
+func (*BinaryJob) ProtoMessage()    {}
+
+func (m *BinaryJob) GetPrinter() string {
+	if m != nil && m.Printer != nil {
+		return *m.Printer
+	}
+	return ""
+}
+
+func (m *BinaryJob) GetData() *Blob {
+	if m != nil {
+		return m.Data
+	}
+	return nil
+}
+
+func (m *BinaryJob) GetJobId() string {
+	if m != nil && m.JobId != nil {
+		return *m.JobId
+	}
+	return ""
+}
+
 type IdName struct {
 	Id               *uint32 `protobuf:"varint,1,opt,name=id" json:"id,omitempty"`
 	Name             *string `protobuf:"bytes,2,opt,name=name" json:"name,omitempty"`
@@ -262,4 +466,5 @@ func (m *Ticket_Problem) GetName() string {
 }
 
 func init() {
+	proto.RegisterEnum("tickets.Blob_CompressionInfo_CompressionType", Blob_CompressionInfo_CompressionType_name, Blob_CompressionInfo_CompressionType_value)
 }
