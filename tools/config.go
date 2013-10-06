@@ -12,6 +12,10 @@ type StompConfig struct {
 	Options stomp.Options
 }
 
+type StompConnector interface {
+	NewConnection() (*stomp.Conn, error)
+}
+
 func (s *StompConfig) NewConnection() (*stomp.Conn, error) {
 	return stomp.Dial(s.Network, s.Address, s.Options)
 }
@@ -71,19 +75,19 @@ func ParseStompDSN(dsn string) (config *StompConfig, err error) {
 func ParseStompConfig(config *conf.ConfigFile, section string) (result *StompConfig, err error) {
 	var cf StompConfig
 	cf.Network = "tcp"
-	if cf.Address, err = config.GetString("messaging", "address"); err != nil {
+	if cf.Address, err = config.GetString(section, "address"); err != nil {
 		return
 	}
 
-	if cf.Options.Login, err = config.GetString("messaging", "username"); err != nil {
+	if cf.Options.Login, err = config.GetString(section, "username"); err != nil {
 		return
 	}
 
-	if cf.Options.Passcode, err = config.GetString("messaging", "password"); err != nil {
+	if cf.Options.Passcode, err = config.GetString(section, "password"); err != nil {
 		return
 	}
 
-	if cf.Options.Host, err = config.GetString("messaging", "vhost"); err != nil {
+	if cf.Options.Host, err = config.GetString(section, "vhost"); err != nil {
 		return
 	}
 
