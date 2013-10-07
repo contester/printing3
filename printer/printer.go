@@ -5,7 +5,6 @@ import (
 	"github.com/contester/printing3/tools"
 	"github.com/contester/printing3/tickets"
 	"flag"
-	"code.google.com/p/goconf/conf"
 	"github.com/jjeffery/stomp"
 	"code.google.com/p/goprotobuf/proto"
 	"fmt"
@@ -57,12 +56,9 @@ func main() {
 	srv.Gsprint = "gsprint.exe"
 	srv.Workdir = os.TempDir()
 
-	var config *conf.ConfigFile
-	var err error
+	config, err := tools.MaybeReadConfigFile(*configFileName)
 
-	if *configFileName != "" {
-		config, err = conf.ReadConfigFile(*configFileName)
-
+	if config != nil {
 		if s, err := config.GetString("server", "stomp"); err == nil {
 			log4go.Trace("Imported db spec from config file: %s", s)
 			*stompSpec = s

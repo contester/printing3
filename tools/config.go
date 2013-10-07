@@ -109,3 +109,10 @@ func ParseStompFlagOrConfig(flagValue string, config *conf.ConfigFile, section s
 
 	return
 }
+
+func MaybeReadConfigFile(configName string) (*conf.ConfigFile, error) {
+	if configName != "" {
+		return conf.ReadConfigFile(configName)
+	}
+	return nil, fmt.Errorf("Empty config file path")
+}
