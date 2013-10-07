@@ -57,24 +57,23 @@ func main() {
 	srv.Gsprint = "gsprint.exe"
 	srv.Workdir = os.TempDir()
 
+	var config *conf.ConfigFile
+	var err error
+
 	if *configFileName != "" {
-		config, err := conf.ReadConfigFile(*configFileName)
-		if err != nil {
-			log4go.Error("Reading config file: %s", err)
-			return
-		}
+		config, err = conf.ReadConfigFile(*configFileName)
 
 		if s, err := config.GetString("server", "stomp"); err == nil {
 			log4go.Trace("Imported db spec from config file: %s", s)
 			*stompSpec = s
 		}
 		if s, err := config.GetString("directories", "temp"); err == nil {
-			log4go.Trace("Imported db spec from config file: %s", s)
+			log4go.Trace("Imported temp dir from config file: %s", s)
 			srv.Workdir = s
 		}
 	}
-	var err error
-	srv.StompConfig, err = tools.ParseStompDSN(*stompSpec)
+
+	srv.StompConfig, err = tools.ParseStompFlagOrConfig(*stompSpec, config, "messaging")
 	if err != nil {
 		return
 	}

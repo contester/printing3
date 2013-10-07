@@ -51,6 +51,7 @@ var (
 )
 
 type submitProcessor struct {
+	*tools.StompConfig
 	db *sqlx.DB
 }
 
@@ -82,11 +83,6 @@ func scanSubmit(r rowOrRows) (*scannedSubmit, error) {
 		return nil, err
 	}
 	return &sub, nil
-}
-
-type submitDetails struct {
-	Description string
-	Test int64
 }
 
 func findRelatedSubmits(db *sqlx.DB, sub *scannedSubmit) ([]*scannedSubmit, error) {
@@ -193,7 +189,7 @@ func main() {
 
 	configFileName := flag.String("config", "", "")
 	dbSpec := flag.String("db", "", "")
-	//stompSpec := flag.String("messaging", "", "")
+	stompSpec := flag.String("messaging", "", "")
 
 	flag.Parse()
 

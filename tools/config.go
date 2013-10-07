@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 	"code.google.com/p/goconf/conf"
+	"fmt"
 )
 
 type StompConfig struct {
@@ -28,12 +29,15 @@ var dsnPattern = regexp.MustCompile(
 
 func ParseStompDSN(dsn string) (config *StompConfig, err error) {
 	if dsn == "" {
-		return
+		return nil, fmt.Errorf("Empty stomp spec!")
 	}
 
 	config = &StompConfig{}
 
 	matches := dsnPattern.FindStringSubmatch(dsn)
+	if matches == nil {
+		return nil, fmt.Errorf("Can't match dsn: %s", dsn)
+	}
 	names := dsnPattern.SubexpNames()
 
 	for i, match := range matches {
@@ -92,4 +96,16 @@ func ParseStompConfig(config *conf.ConfigFile, section string) (result *StompCon
 	}
 
 	return &cf, nil
+}
+
+func ParseStompFlagOrConfig(flagValue string, config *conf.ConfigFile, section string) (result *StompConfig, err error) {
+	if result, err = ParseStompDSN(flagValue); err == nil {
+		return
+	}
+
+	if config != nil {
+		result, err = ParseStompConfig(config, section)
+	}
+
+	return
 }
