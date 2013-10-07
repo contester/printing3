@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 
-	"code.google.com/p/goconf/conf"
+	"github.com/jjeffery/stomp"
 	"code.google.com/p/log4go"
 	"github.com/jmoiron/sqlx"
 
@@ -53,6 +53,8 @@ var (
 type submitProcessor struct {
 	*tools.StompConfig
 	db *sqlx.DB
+	conn *stomp.Conn
+	queueName string
 }
 
 type scannedSubmit struct {
@@ -156,7 +158,7 @@ func (s *submitProcessor) processSubmit(sub *scannedSubmit) {
 		teamName = teamName + " #" + strconv.FormatInt(sub.TeamNum.Int64, 10)
 	}
 	result.Team = &tickets.IdName{Id: proto.Uint32(uint32(sub.Team)), Name: &teamName,}
-	result.JudgeTime = proto.Uint64(uint64(sub.Touched.UnixNano()))
+	result.JudgeTime = proto.Uint64(uint64(sub.Touched.UnixNano() / 1000))
 
 	result.Submit = make([]*tickets.Ticket_Submit, 0)
 	result.Submit = append(result.Submit, s.createSubmit(sub, len(related) + 1))
@@ -165,8 +167,33 @@ func (s *submitProcessor) processSubmit(sub *scannedSubmit) {
 		result.Submit = append(result.Submit, s.createSubmit(related[count], count))
 	}
 
-	b, _ := json.MarshalIndent(result, "", "  ")
-	fmt.Println(string(b))
+	body, err := proto.Marshal(&result)
+	if err != nil {
+		return
+	}
+	{
+		b, _ := json.MarshalIndent(result, "", "  ")
+		fmt.Println(string(b))
+	}
+
+	for {
+		if s.conn == nil {
+			s.conn, err = s.StompConfig.NewConnection()
+			if err != nil {
+				log.Printf("(retry in 15s) Error connecting to stomp: %s", err)
+				time.Sleep(15 * time.Second)
+				continue
+			}
+		}
+
+		err = s.conn.SendWithReceipt("/amq/queue/ticket_pb", "application/octet-stream", body, stomp.NewHeader("delivery-mode", "2"))
+		if err == nil {
+			break
+		}
+		s.conn.Disconnect()
+		s.conn = nil
+	}
+	s.db.Exec("Update Submits set Printed = Touched where ID = ?", sub.ID)
 }
 
 func (s *submitProcessor) scan() {
@@ -193,13 +220,9 @@ func main() {
 
 	flag.Parse()
 
-	if *configFileName != "" {
-		config, err := conf.ReadConfigFile(*configFileName)
-		if err != nil {
-			log4go.Error("Reading config file: %s", err)
-			return
-		}
+	config, err := tools.MaybeReadConfigFile(*configFileName)
 
+	if config != nil {
 		if s, err := config.GetString("server", "db"); err == nil {
 			log4go.Trace("Imported db spec from config file: %s", s)
 			*dbSpec = s
@@ -207,7 +230,6 @@ func main() {
 	}
 
 	var srv submitProcessor
-	var err error
 
 	srv.db, err = createDb(*dbSpec)
 	if err != nil {
@@ -215,5 +237,15 @@ func main() {
 		return
 	}
 
-	srv.scan()
+	srv.StompConfig, err = tools.ParseStompFlagOrConfig(*stompSpec, config, "messaging")
+	if err != nil {
+		log4go.Exitf("Opening stomp connection to %s: %s", *stompSpec, err)
+		return
+	}
+
+	for {
+		srv.scan()
+		log.Printf("Scan complete, sleeping for 15s")
+		time.Sleep(15 * time.Second)
+	}
 }
