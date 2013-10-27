@@ -75,16 +75,14 @@ type rowOrRows interface {
 	Scan(dest ...interface{}) error
 }
 
-func scanSubmit(r rowOrRows) (*scannedSubmit, error) {
+func scanSubmit(r rowOrRows) (result *scannedSubmit, err error) {
 	var sub scannedSubmit
-	err := r.Scan(&sub.Contest, &sub.Team, &sub.Touched, &sub.Task, &sub.Compiled, &sub.Arrived, &sub.Passed,
+	if err = r.Scan(&sub.Contest, &sub.Team, &sub.Touched, &sub.Task, &sub.Compiled, &sub.Arrived, &sub.Passed,
 		&sub.Taken, &sub.ID, &sub.Printer, &sub.SchoolMode, &sub.TestingID, &sub.SchoolName, &sub.TeamNum,
-		&sub.ContestName, &sub.ProblemName, &sub.ComputerID, &sub.ComputerName, &sub.AreaID, &sub.AreaName)
-	if err != nil {
-		log4go.Error("Error when scanning: %s", err)
-		return nil, err
+		&sub.ContestName, &sub.ProblemName, &sub.ComputerID, &sub.ComputerName, &sub.AreaID, &sub.AreaName); err == nil {
+		result = &sub
 	}
-	return &sub, nil
+	return
 }
 
 func findRelatedSubmits(db *sqlx.DB, sub *scannedSubmit) ([]*scannedSubmit, error) {
@@ -171,10 +169,6 @@ func (s *submitProcessor) processSubmit(sub *scannedSubmit) {
 	if err != nil {
 		return
 	}
-	{
-		b, _ := json.MarshalIndent(result, "", "  ")
-		fmt.Println(string(b))
-	}
 
 	for {
 		if s.conn == nil {
@@ -194,6 +188,7 @@ func (s *submitProcessor) processSubmit(sub *scannedSubmit) {
 		s.conn = nil
 	}
 	s.db.Exec("Update Submits set Printed = Touched where ID = ?", sub.ID)
+	fmt.Printf("Printed submit %d\n", sub.ID)
 }
 
 func (s *submitProcessor) scan() {
@@ -203,9 +198,10 @@ func (s *submitProcessor) scan() {
 		return
 	}
 	for rows.Next() {
-		sub, _ := scanSubmit(rows)
-		if sub != nil {
+		if sub, err := scanSubmit(rows); sub != nil {
 			s.processSubmit(sub)
+		} else {
+			log4go.Error("Error reading submit info: %s", err)
 		}
 	}
 }
