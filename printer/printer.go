@@ -61,7 +61,7 @@ func main() {
 	var srv server
 	srv.Gsprint = "gsprint.exe"
 	srv.Workdir = os.TempDir()
-        srv.Queue = "/amq/queue/printer"
+    srv.Queue = "/amq/queue/printer"
 
 	config, err := tools.MaybeReadConfigFile(*configFileName)
 

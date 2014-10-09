@@ -26,6 +26,7 @@ message PrintJob {
     optional uint64 timestamp = 7;
     optional string printer = 8;
     optional uint32 job_id = 9;
+    optional string charset = 10;
 };
 
 message BinaryJob {
