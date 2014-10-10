@@ -196,8 +196,8 @@ func main() {
 	flag.Parse()
 
 	var srv server
-	srv.Gsprint = "gsprint.exe"
     srv.Queue = "/amq/queue/sources"
+	srv.Destination = "/amq/queue/tex"
 
 	config, err := tools.MaybeReadConfigFile(*configFileName)
 
