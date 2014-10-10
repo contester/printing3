@@ -118,7 +118,7 @@ func (s *submitProcessor) createSubmit(sub *scannedSubmit, submitNo int) *ticket
 		var description string
 		var test int64
 		err := s.db.QueryRow("select ResultDesc.Description, Results.Test from Results, ResultDesc where " +
-					"Results.UID = ? and ResultDesc.ID = Results.Result and not ResultDesc.Success order by Result.Test",
+					"Results.UID = ? and ResultDesc.ID = Results.Result and not ResultDesc.Success order by Results.Test",
 			sub.TestingID).Scan(&description, &test)
 		switch {
 		case err == sql.ErrNoRows:
@@ -157,12 +157,16 @@ func (s *submitProcessor) processSubmit(sub *scannedSubmit) {
 	result.Team = &tickets.IdName{Id: proto.Uint32(uint32(sub.Team)), Name: &teamName,}
 	result.JudgeTime = proto.Uint64(uint64(sub.Touched.UnixNano() / 1000))
 
+	fmt.Printf("%+v\n", &result)
+
 	result.Submit = make([]*tickets.Ticket_Submit, 0)
 	result.Submit = append(result.Submit, s.createSubmit(sub, len(related) + 1))
 	for count := len(related); count > 0; {
 		count -= 1
 		result.Submit = append(result.Submit, s.createSubmit(related[count], count))
 	}
+
+	fmt.Printf("%+v\n", &result)
 
 	body, err := proto.Marshal(&result)
 	if err != nil {
