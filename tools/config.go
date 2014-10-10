@@ -1,7 +1,7 @@
 package tools
 
 import (
-	"github.com/jjeffery/stomp"
+	"gopkg.in/stomp.v1"
 	"regexp"
 	"strings"
 	"code.google.com/p/goconf/conf"

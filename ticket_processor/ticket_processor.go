@@ -5,7 +5,7 @@ import (
 	"github.com/contester/printing3/tools"
 	"github.com/contester/printing3/tickets"
 	"flag"
-	"github.com/jjeffery/stomp"
+	"gopkg.in/stomp.v1"
 	"code.google.com/p/goprotobuf/proto"
 	"fmt"
         "time"
@@ -124,7 +124,7 @@ func (s *templateData) GetSubmits() []*submitLine {
 	return result
 }
 
-func (s *server) processIncoming(conn *stomp.Conn, msg *stomp.Message) error {
+func (s *server) processIncoming(conn tools.Conn, msg *stomp.Message) error {
 	var job tickets.Ticket
 	if err := proto.Unmarshal(msg.Body, &job); err != nil {
                 log4go.Error("Received malformed job: %s", err)
@@ -156,7 +156,7 @@ func (s *server) processIncoming(conn *stomp.Conn, msg *stomp.Message) error {
 		return err
 	}
 
-	return conn.Send(s.Destination, "application/binary", contents, nil)
+	return conn.SendWithReceipt(s.Destination, "application/octet-stream", contents, stomp.NewHeader("delivery-mode", "2"))
 }
 
 func main() {
@@ -195,7 +195,7 @@ func main() {
 	}
 
 	for {
-		srv.ReceiveLoop(srv.Queue, srv.processIncoming)
+		srv.ReceiveLoop(srv.Queue, true, srv.processIncoming)
 		time.Sleep(15 * time.Second)
 	}
 }

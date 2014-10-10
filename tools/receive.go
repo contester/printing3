@@ -1,16 +1,14 @@
 package tools
 
 import (
-	l4g "code.google.com/p/log4go"
-	"github.com/jjeffery/stomp"
-	"time"
+	"gopkg.in/stomp.v1"
 )
 
 type Conn interface {
-
+	SendWithReceipt(destination, contentType string, body []byte, userDefined *stomp.Header) error
 }
 
-func (pc *StompConfig) ReceiveLoop(queueName string, process func(*stomp.Conn, *stomp.Message) error) error {
+func (pc *StompConfig) ReceiveLoop(queueName string, useTransactions bool, process func(Conn, *stomp.Message) error) error {
 	conn, err := pc.NewConnection()
 	//defer conn.Disconnect()
 
@@ -28,13 +26,22 @@ func (pc *StompConfig) ReceiveLoop(queueName string, process func(*stomp.Conn, *
 		if err != nil {
 			return err
 		}
-		err = process(conn, msg)
-		if err != nil {
-			l4g.Error("Processing failed with error: %s, nacking", err)
-			err = conn.Nack(msg)
-			time.Sleep(15 * time.Second)
+		if useTransactions {
+			tx := conn.Begin()
+			err = process(tx, msg)
+			if err != nil {
+				tx.Abort()
+			} else {
+				tx.Ack(msg)
+				err = tx.Commit()
+			}
 		} else {
-			err = conn.Ack(msg)
+			err = process(conn, msg)
+			if err != nil {
+				err = conn.Nack(msg)
+			} else {
+				err = conn.Ack(msg)
+			}
 		}
 		if err != nil {
 			return err
