@@ -228,13 +228,13 @@ func main() {
 
 	srv.db, err = createDb(*dbSpec)
 	if err != nil {
-		log4go.Exitf("Opening db connection to %s: %s", *dbSpec, err)
+		log4go.Error("Opening db connection to %s: %s", *dbSpec, err)
 		return
 	}
 
 	srv.StompConfig, err = tools.ParseStompFlagOrConfig(*stompSpec, config, "messaging")
 	if err != nil {
-		log4go.Exitf("Opening stomp connection to %s: %s", *stompSpec, err)
+		log4go.Error("Opening stomp connection to %s: %s", *stompSpec, err)
 		return
 	}
 
