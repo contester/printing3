@@ -15,7 +15,6 @@ import (
 	"github.com/contester/printing3/tools"
 	"github.com/contester/printing3/tickets"
 	"time"
-	"encoding/json"
 	"code.google.com/p/goprotobuf/proto"
 	"strconv"
 )

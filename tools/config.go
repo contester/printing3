@@ -68,7 +68,7 @@ func ParseStompDSN(dsn string) (config *StompConfig, err error) {
 		config.Network = "tcp"
 	}
 
-	// Set default adress if empty
+	// Set default address if empty
 	if config.Address == "" {
 		config.Address = "127.0.0.1:61613"
 	}

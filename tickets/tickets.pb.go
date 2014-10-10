@@ -115,6 +115,7 @@ type PrintJob struct {
 	Timestamp        *uint64   `protobuf:"varint,7,opt,name=timestamp" json:"timestamp,omitempty"`
 	Printer          *string   `protobuf:"bytes,8,opt,name=printer" json:"printer,omitempty"`
 	JobId            *uint32   `protobuf:"varint,9,opt,name=job_id" json:"job_id,omitempty"`
+	Charset          *string   `protobuf:"bytes,10,opt,name=charset" json:"charset,omitempty"`
 	XXX_unrecognized []byte    `json:"-"`
 }
 
@@ -183,6 +184,13 @@ func (m *PrintJob) GetJobId() uint32 {
 		return *m.JobId
 	}
 	return 0
+}
+
+func (m *PrintJob) GetCharset() string {
+	if m != nil && m.Charset != nil {
+		return *m.Charset
+	}
+	return ""
 }
 
 type BinaryJob struct {

@@ -13,129 +13,74 @@ import (
 	"os"
 	"os/exec"
         "time"
-	"strconv"
 )
 
 type server struct {
 	*tools.StompConfig
-	Workdir, Queue string
-	languages map[string]string
-}
-
-const DOCUMENT_TEMPLATE = `\documentclass[12pt,a4paper,oneside]{article}
-\u005cusepackage[utf8]{inputenc}
-\u005cusepackage[english,russian]{babel}
-\u005cusepackage{fancyhdr}
-\u005cusepackage{lastpage}
-\u005cusepackage{latexsym}
-\u005cusepackage{color}
-\u005cusepackage{alltt}
-\u005cusepackage{bold-extra}
-\renewcommand{\familydefault}{\ttdefault}
-\pagestyle{fancy}
-\lhead{({{.GetComputer.GetId}}) {{.GetComputer.GetName}}}
-\chead{}
-\rhead{({{.GetTeam.GetId}}) {{.GetTeam.GetName}}}
-\lfoot{({{.GetArea.GetId}}) {{.GetArea.GetName}}}
-\cfoot{ {{.GetFilename}}}
-\rfoot{\thepage\ of \pageref{LastPage}}
-{{.StyleText}}
-\hoffset=-20mm
-\voffset=-20mm
-\setlength\textheight{245mm}
-\setlength\textwidth{175mm}
-\fancyhfoffset{0cm}
-\title{ {{.GetFilename}}}
-\begin{document}
-
-\begin{center}
-\begin{tabular}{|l|p{11cm}|}
-\hline
-Team & ({{.GetTeam.GetId}}) {{.GetTeam.GetName}} \\\\
-\hline
-Computer & ({{.GetComputer.GetId}}) {{.GetComputer.GetName}} \\\\
-\hline
-Location & ({{.GetArea.GetId}}) {{.GetArea.GetName}} \\\\
-\hline
-File name & {{.GetFilename}} \\\\
-\hline
-Contest & ({{.GetContest.GetId}}) {{.GetContest.GetName}} \\\\
-\hline
-Pages & \pageref{LastPage} \\\\
-\hline
-\end{tabular}
-\end{center}
-\thispagestyle{empty}
-{{.IncludeText}}
-\end {document}`
-
-type templateData struct {
-	*tickets.PrintJob
-	StyleText, IncludeText string
+	Workdir, Queue, Destination string
 }
 
 func (s *server) processIncoming(conn *stomp.Conn, msg *stomp.Message) error {
-	var job tickets.PrintJob
+	var job tickets.BinaryJob
 	if err := proto.Unmarshal(msg.Body, &job); err != nil {
                 log4go.Error("Received malformed job: %s", err)
 		return err
 	}
 
-	jobId := strconv.FormatUint(uint64(job.GetJobId()), 10)
-
-	jobDir := filepath.Join(s.Workdir, jobId)
+	jobDir := filepath.Join(s.Workdir, job.GetJobId())
 	os.MkdirAll(jobDir, os.ModePerm) // err?
 
-	sourceLang := filepath.Ext(job.GetFilename())
-	if sourceLang != "" {
-		sourceLang = s.languages[sourceLang[1:]]
-	}
-	if sourceLang == "" {
-		sourceLang = "txt"
-	}
-
-	sourceName := fmt.Sprintf("%s-source.%s", jobId, sourceLang)
-	outputName := fmt.Sprintf("%s-hl.tex", jobId)
-	styleName := fmt.Sprintf("%s-style.sty", jobId)
+	sourceName := fmt.Sprintf("%s.tex", job.GetJobId())
 
 	buf, err := job.GetData().Bytes()
 	if err != nil {
 		return err
 	}
-
 	if err = ioutil.WriteFile(filepath.Join(jobDir, sourceName), buf, os.ModePerm); err != nil {
 		return err
 	}
 
-	args := []string{"--out-format=latex",
-		"--syntax=" + sourceLang,
-		"--style=print",
-		"--input=" + sourceName,
-		"--output=" + outputName,
-		"--fragment",
-		"--replace-quotes",
-		"--wrap",
-		"--encoding=cp1251",
-		"--style-outfile=" + styleName}
-	if sourceLang == "txt" {
-		args = append(args, "--line-numbers")
-	}
-
-	cmd := exec.Command("highlight", args...)
+	cmd := exec.Command("latex", "-interaction=batchmode", sourceName)
+	cmd.Dir = jobDir
 	if err = cmd.Run(); err != nil {
 		return err
 	}
 
-
-
-	log4go.Info("Sending job %s to printer %s", job.GetJobId(), job.GetPrinter())
-	cmd := exec.Command(s.Gsprint, "-printer", job.GetPrinter(), sourceFullName)
-	if err := cmd.Run(); err != nil {
-                log4go.Error("Error printing: %s", err)
+	cmd = exec.Command("latex", "-interaction=batchmode", sourceName)
+	cmd.Dir = jobDir
+	if err = cmd.Run(); err != nil {
 		return err
 	}
 
-	return nil
+	dviName := fmt.Sprintf("%s.dvi", job.GetJobId())
+	cmd = exec.Command("dvips", "-t", "a4", dviName)
+	cmd.Dir = jobDir
+	if err = cmd.Run(); err != nil {
+		return err
+	}
+
+	content, err := ioutil.ReadFile(filepath.Join(jobDir, dviName))
+	if err != nil {
+		return err
+	}
+
+	cBlob, err := tickets.NewBlob(content)
+	if err != nil {
+		return err
+	}
+
+	result := tickets.BinaryJob{
+		JobId: job.JobId,
+		Printer: job.Printer,
+		Data: cBlob,
+	}
+
+	content, err = proto.Marshal(&result)
+	if err != nil {
+		return err
+	}
+
+	return conn.Send(s.Destination, "application/binary", content, nil)
 }
 
 func main() {
@@ -148,8 +93,8 @@ func main() {
 	flag.Parse()
 
 	var srv server
-	srv.Gsprint = "gsprint.exe"
-    srv.Queue = "/amq/queue/sources"
+    srv.Queue = "/amq/queue/tex"
+	srv.Destination = "/amq/queue/printer"
 
 	config, err := tools.MaybeReadConfigFile(*configFileName)
 

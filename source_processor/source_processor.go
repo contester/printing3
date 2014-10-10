@@ -16,14 +16,14 @@ import (
 	"strconv"
 	"code.google.com/p/go-charset/charset"
 	_ "code.google.com/p/go-charset/data"
-	"code.google.com/p/goconf/conf"
-	"github.com/contester/runlib/contester_proto"
 	"text/template"
+	"io"
+	"bytes"
 )
 
 type server struct {
 	*tools.StompConfig
-	Workdir, Queue string
+	Workdir, Queue, Destination string
 	languages map[string]string
 }
 
@@ -142,20 +142,22 @@ func (s *server) processIncoming(conn *stomp.Conn, msg *stomp.Message) error {
 		PrintJob: &job,
 	}
 
-	contentFile, err := os.Open(filepath.Join(jobDir, outputName))
-	if err != nil {
+	var contentSource io.Reader
+	if contentFile, err := os.Open(filepath.Join(jobDir, outputName)); err == nil {
+		contentSource = contentFile
+		defer contentFile.Close()
+	} else {
 		return err
 	}
-	defer contentFile.Close()
 
 	if sourceCharset != "utf-8" {
-		contentFile, err = charset.NewReader(sourceCharset, contentFile)
+		contentSource, err = charset.NewReader(sourceCharset, contentSource)
 		if err != nil {
 			return nil
 		}
 	}
 
-	contents, err := ioutil.ReadAll(contentFile)
+	contents, err := ioutil.ReadAll(contentSource)
 	if err != nil {
 		return err
 	}
@@ -172,13 +174,18 @@ func (s *server) processIncoming(conn *stomp.Conn, msg *stomp.Message) error {
 		return err
 	}
 
-	msg := tickets.BinaryJob{
-		JobId: &jobId,
-		Printer: job.Printer,
-		Data: tickets.NewBlob(output.Bytes()),
+	cBlob, err := tickets.NewBlob(output.Bytes())
+	if err != nil {
+		return err
 	}
 
-	contents, err = proto.Marshal(&msg)
+	result := tickets.BinaryJob{
+		JobId: &jobId,
+		Printer: job.Printer,
+		Data: cBlob,
+	}
+
+	contents, err = proto.Marshal(&result)
 	if err != nil {
 		return err
 	}
