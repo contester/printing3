@@ -13,17 +13,10 @@ import (
 	"github.com/contester/printing3/tickets"
 	"github.com/contester/printing3/tools"
 	"github.com/jmoiron/sqlx"
-	"gopkg.in/stomp.v1"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/contester/printing3/grabber"
 )
-
-func createDb(spec string) (db *sqlx.DB, err error) {
-	if db, err = sqlx.Connect("mysql", spec+"?parseTime=true&charset=utf8mb4,utf8"); err != nil {
-		return
-	}
-	return
-}
 
 func createSelectSubmitQuery(extraWhere string) string {
 	return `select
@@ -48,13 +41,6 @@ var (
 	relatedSubmitsQuery = createSelectSubmitQuery("Submits.Contest = ? and Submits.Task = ? and Submits.Team = ? and Submits.ID < ? and")
 )
 
-type submitProcessor struct {
-	*tools.StompConfig
-	db        *sqlx.DB
-	conn      *stomp.Conn
-	queueName string
-}
-
 type scannedSubmit struct {
 	Contest, Team                                      int64
 	Touched                                            time.Time
@@ -69,11 +55,7 @@ type scannedSubmit struct {
 	AreaName                                           string
 }
 
-type rowOrRows interface {
-	Scan(dest ...interface{}) error
-}
-
-func scanSubmit(r rowOrRows) (result *scannedSubmit, err error) {
+func scanSubmit(r grabber.RowOrRows) (result *scannedSubmit, err error) {
 	var sub scannedSubmit
 	if err = r.Scan(&sub.Contest, &sub.Team, &sub.Touched, &sub.Task, &sub.Compiled, &sub.Arrived, &sub.Passed,
 		&sub.Taken, &sub.ID, &sub.Printer, &sub.SchoolMode, &sub.TestingID, &sub.SchoolName, &sub.TeamNum,
@@ -102,7 +84,7 @@ func findRelatedSubmits(db *sqlx.DB, sub *scannedSubmit) ([]*scannedSubmit, erro
 	return result, nil
 }
 
-func (s *submitProcessor) createSubmit(sub *scannedSubmit, submitNo int) *tickets.Ticket_Submit {
+func createSubmit(db *sqlx.DB, sub *scannedSubmit, submitNo int) *tickets.Ticket_Submit {
 	var result tickets.Ticket_Submit
 	result.SubmitNumber = proto.Uint32(uint32(submitNo))
 	if sub.Arrived > 0 {
@@ -116,7 +98,7 @@ func (s *submitProcessor) createSubmit(sub *scannedSubmit, submitNo int) *ticket
 	} else {
 		var description string
 		var test int64
-		err := s.db.QueryRow("select ResultDesc.Description, Results.Test from Results, ResultDesc where "+
+		err := db.QueryRow("select ResultDesc.Description, Results.Test from Results, ResultDesc where "+
 			"Results.UID = ? and ResultDesc.ID = Results.Result and not ResultDesc.Success order by Results.Test",
 			sub.TestingID).Scan(&description, &test)
 		switch {
@@ -134,20 +116,25 @@ func (s *submitProcessor) createSubmit(sub *scannedSubmit, submitNo int) *ticket
 	return &result
 }
 
-func (s *submitProcessor) processSubmit(sub *scannedSubmit) {
-	related, err := findRelatedSubmits(s.db, sub)
+func processSubmit(g *grabber.Grabber, rows grabber.RowOrRows) error {
+	sub, err := scanSubmit(rows)
 	if err != nil {
-		return
+		return err
+	}
+	related, err := findRelatedSubmits(g.DB, sub)
+	if err != nil {
+		return err
 	}
 
-	var result tickets.Ticket
 
-	result.SubmitId = proto.Uint32(uint32(sub.ID))
-	result.Printer = &sub.Printer
-	result.Computer = &tickets.Computer{Id: &sub.ComputerID, Name: &sub.ComputerName}
-	result.Area = &tickets.IdName{Id: proto.Uint32(uint32(sub.AreaID)), Name: &sub.AreaName}
-	result.Contest = &tickets.IdName{Id: proto.Uint32(uint32(sub.Contest)), Name: &sub.ContestName}
-	result.Problem = &tickets.Ticket_Problem{Id: &sub.Task, Name: &sub.ProblemName}
+	result := tickets.Ticket{
+		SubmitId: proto.Uint32(uint32(sub.ID)),
+		Printer: &sub.Printer,
+		Computer: &tickets.Computer{Id: &sub.ComputerID, Name: &sub.ComputerName},
+		Area: &tickets.IdName{Id: proto.Uint32(uint32(sub.AreaID)), Name: &sub.AreaName},
+		Contest: &tickets.IdName{Id: proto.Uint32(uint32(sub.Contest)), Name: &sub.ContestName},
+		Problem: &tickets.Ticket_Problem{Id: &sub.Task, Name: &sub.ProblemName},
+	}
 
 	teamName := sub.SchoolName
 	if sub.TeamNum.Valid && sub.TeamNum.Int64 > 0 {
@@ -157,51 +144,20 @@ func (s *submitProcessor) processSubmit(sub *scannedSubmit) {
 	result.JudgeTime = proto.Uint64(uint64(sub.Touched.UnixNano() / 1000))
 
 	result.Submit = make([]*tickets.Ticket_Submit, 0)
-	result.Submit = append(result.Submit, s.createSubmit(sub, len(related)+1))
+	result.Submit = append(result.Submit, createSubmit(g.DB, sub, len(related)+1))
 	for count := len(related); count > 0; {
 		count -= 1
-		result.Submit = append(result.Submit, s.createSubmit(related[count], count))
+		result.Submit = append(result.Submit, createSubmit(g.DB, related[count], count))
 	}
 
-	body, err := proto.Marshal(&result)
-	if err != nil {
-		return
+	if err = g.Send(&result); err != nil {
+		return err
 	}
-
-	for {
-		if s.conn == nil {
-			s.conn, err = s.StompConfig.NewConnection()
-			if err != nil {
-				log.Printf("(retry in 15s) Error connecting to stomp: %s", err)
-				time.Sleep(15 * time.Second)
-				continue
-			}
-		}
-
-		err = s.conn.SendWithReceipt("/amq/queue/ticket_pb", "application/octet-stream", body, stomp.NewHeader("delivery-mode", "2"))
-		if err == nil {
-			break
-		}
-		s.conn.Disconnect()
-		s.conn = nil
+	if _, err = g.DB.Exec("Update Submits set Printed = Touched where ID = ?", sub.ID); err != nil {
+		return err
 	}
-	s.db.Exec("Update Submits set Printed = Touched where ID = ?", sub.ID)
 	fmt.Printf("Printed submit %d\n", sub.ID)
-}
-
-func (s *submitProcessor) scan() {
-	rows, err := s.db.Query(allSubmitsQuery)
-	if err != nil {
-		log4go.Error("Error in submit: %s", err)
-		return
-	}
-	for rows.Next() {
-		if sub, err := scanSubmit(rows); sub != nil {
-			s.processSubmit(sub)
-		} else {
-			log4go.Error("Error reading submit info: %s", err)
-		}
-	}
+	return nil
 }
 
 func main() {
@@ -223,22 +179,19 @@ func main() {
 		}
 	}
 
-	var srv submitProcessor
-
-	srv.db, err = createDb(*dbSpec)
+	g, err := grabber.New(*dbSpec, allSubmitsQuery, "/amq/queue/ticket_pb")
 	if err != nil {
-		log4go.Error("Opening db connection to %s: %s", *dbSpec, err)
-		return
+		log.Fatalf("Creating grabber: %s", err)
 	}
 
-	srv.StompConfig, err = tools.ParseStompFlagOrConfig(*stompSpec, config, "messaging")
+	g.StompConfig, err = tools.ParseStompFlagOrConfig(*stompSpec, config, "messaging")
 	if err != nil {
 		log4go.Error("Opening stomp connection to %s: %s", *stompSpec, err)
 		return
 	}
 
 	for {
-		srv.scan()
+		g.Scan(processSubmit)
 		log.Printf("Scan complete, sleeping for 15s")
 		time.Sleep(15 * time.Second)
 	}

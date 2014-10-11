@@ -12,18 +12,10 @@ import (
 	"code.google.com/p/log4go"
 	"github.com/contester/printing3/tickets"
 	"github.com/contester/printing3/tools"
-	"github.com/jmoiron/sqlx"
-	"gopkg.in/stomp.v1"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/contester/printing3/grabber"
 )
-
-func createDb(spec string) (db *sqlx.DB, err error) {
-	if db, err = sqlx.Connect("mysql", spec+"?parseTime=true&charset=utf8mb4,utf8"); err != nil {
-		return
-	}
-	return
-}
 
 const PRINT_QUERY = `select
 PrintJobs.ID as ID, Filename, PrintJobs.Contest as ContestID,
@@ -38,13 +30,6 @@ Contests.ID = Participants.Contest and Contests.ID = PrintJobs.Contest and CompL
 Teams.ID = Participants.Team and Teams.School = Schools.ID and Areas.ID = CompLocations.Location and
 Participants.LocalID = PrintJobs.Team and Printed is null
 `
-
-type printProcessor struct {
-	*tools.StompConfig
-	db        *sqlx.DB
-	conn      *stomp.Conn
-	queueName string
-}
 
 type scannedJob struct {
 	JobID                    int64
@@ -62,11 +47,7 @@ type scannedJob struct {
 	Arrived                  time.Time
 }
 
-type rowOrRows interface {
-	Scan(dest ...interface{}) error
-}
-
-func scanJob(r rowOrRows) (*scannedJob, error) {
+func scanJob(r grabber.RowOrRows) (*scannedJob, error) {
 	var job scannedJob
 	if err := r.Scan(&job.JobID, &job.Filename, &job.ContestID, &job.ContestName, &job.TeamID, &job.SchoolName,
 		&job.TeamNum, &job.ComputerID, &job.ComputerName, &job.AreaID, &job.AreaName, &job.Printer,
@@ -76,7 +57,12 @@ func scanJob(r rowOrRows) (*scannedJob, error) {
 	return &job, nil
 }
 
-func (s *printProcessor) processJob(job *scannedJob) {
+func processJob(g *grabber.Grabber, rows grabber.RowOrRows) error {
+	job, err := scanJob(rows)
+	if err != nil {
+		return err
+	}
+
 	result := tickets.PrintJob{
 		JobId:     proto.Uint32(uint32(job.JobID)),
 		Filename:  &job.Filename,
@@ -93,45 +79,15 @@ func (s *printProcessor) processJob(job *scannedJob) {
 		result.Team.Name = proto.String(result.Team.GetName() + " #" + strconv.FormatInt(job.TeamNum.Int64, 10))
 	}
 
-	body, err := proto.Marshal(&result)
-	if err != nil {
-		return
+	if err = g.Send(&result); err != nil {
+		return err
 	}
 
-	for {
-		if s.conn == nil {
-			s.conn, err = s.StompConfig.NewConnection()
-			if err != nil {
-				log.Printf("(retry in 15s) Error connecting to stomp: %s", err)
-				time.Sleep(15 * time.Second)
-				continue
-			}
-		}
-
-		err = s.conn.SendWithReceipt("/amq/queue/source_pb", "application/octet-stream", body, stomp.NewHeader("delivery-mode", "2"))
-		if err == nil {
-			break
-		}
-		s.conn.Disconnect()
-		s.conn = nil
+	if _, err = g.DB.Exec("Update PrintJobs set Printed = 255 where ID = ?", job.JobID); err != nil {
+		return err
 	}
-	s.db.Exec("Update PrintJobs set Printed = 255 where ID = ?", job.JobID)
 	fmt.Printf("Printed job %d\n", job.JobID)
-}
-
-func (s *printProcessor) scan() {
-	rows, err := s.db.Query(PRINT_QUERY)
-	if err != nil {
-		log4go.Error("Error in submit: %s", err)
-		return
-	}
-	for rows.Next() {
-		if job, err := scanJob(rows); job != nil {
-			s.processJob(job)
-		} else {
-			log4go.Error("Error reading submit info: %s", err)
-		}
-	}
+	return nil
 }
 
 func main() {
@@ -153,22 +109,20 @@ func main() {
 		}
 	}
 
-	var srv printProcessor
-
-	srv.db, err = createDb(*dbSpec)
+	g, err := grabber.New(*dbSpec, PRINT_QUERY, "/amq/queue/source_pb")
 	if err != nil {
-		log4go.Error("Opening db connection to %s: %s", *dbSpec, err)
+		log.Printf("Opening db connection to %+v: %s", dbSpec, err)
 		return
 	}
 
-	srv.StompConfig, err = tools.ParseStompFlagOrConfig(*stompSpec, config, "messaging")
+	g.StompConfig, err = tools.ParseStompFlagOrConfig(*stompSpec, config, "messaging")
 	if err != nil {
-		log4go.Error("Opening stomp connection to %s: %s", *stompSpec, err)
+		log.Printf("Opening stomp connection to %+v: %s", *stompSpec, err)
 		return
 	}
 
 	for {
-		srv.scan()
+		g.Scan(processJob)
 		log.Printf("Scan complete, sleeping for 15s")
 		time.Sleep(15 * time.Second)
 	}
