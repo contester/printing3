@@ -1,18 +1,18 @@
 package grabber
 
 import (
+	"code.google.com/p/goprotobuf/proto"
 	"github.com/contester/printing3/tools"
 	"github.com/jmoiron/sqlx"
 	"gopkg.in/stomp.v1"
 	"log"
-	"code.google.com/p/goprotobuf/proto"
 	"time"
 )
 
 type Grabber struct {
-	StompConfig *tools.StompConfig
-	DB *sqlx.DB
-	Conn *stomp.Conn
+	StompConfig        *tools.StompConfig
+	DB                 *sqlx.DB
+	Conn               *stomp.Conn
 	Query, Destination string
 }
 
@@ -30,7 +30,7 @@ func createDb(spec string) (*sqlx.DB, error) {
 
 func New(dbSpec, query, destination string) (*Grabber, error) {
 	result := Grabber{
-		Query: query,
+		Query:       query,
 		Destination: destination,
 	}
 	var err error
@@ -41,7 +41,7 @@ func New(dbSpec, query, destination string) (*Grabber, error) {
 	return &result, nil
 }
 
-func (s *Grabber) Scan(process func(*Grabber, RowOrRows)error) error {
+func (s *Grabber) Scan(process func(*Grabber, RowOrRows) error) error {
 	rows, err := s.DB.Query(s.Query)
 	if err != nil {
 		log.Printf("Error in submit: %s", err)

@@ -9,13 +9,12 @@ import (
 	"time"
 
 	"code.google.com/p/goprotobuf/proto"
-	"code.google.com/p/log4go"
 	"github.com/contester/printing3/tickets"
 	"github.com/contester/printing3/tools"
 	"github.com/jmoiron/sqlx"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/contester/printing3/grabber"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 func createSelectSubmitQuery(extraWhere string) string {
@@ -68,7 +67,7 @@ func scanSubmit(r grabber.RowOrRows) (result *scannedSubmit, err error) {
 func findRelatedSubmits(db *sqlx.DB, sub *scannedSubmit) ([]*scannedSubmit, error) {
 	rows, err := db.Query(relatedSubmitsQuery, sub.Contest, sub.Task, sub.Team, sub.ID)
 	if err != nil {
-		log4go.Error("Error scanning for related submits: %s", err)
+		log.Printf("Error scanning for related submits: %s", err)
 		return nil, err
 	}
 
@@ -126,14 +125,13 @@ func processSubmit(g *grabber.Grabber, rows grabber.RowOrRows) error {
 		return err
 	}
 
-
 	result := tickets.Ticket{
 		SubmitId: proto.Uint32(uint32(sub.ID)),
-		Printer: &sub.Printer,
+		Printer:  &sub.Printer,
 		Computer: &tickets.Computer{Id: &sub.ComputerID, Name: &sub.ComputerName},
-		Area: &tickets.IdName{Id: proto.Uint32(uint32(sub.AreaID)), Name: &sub.AreaName},
-		Contest: &tickets.IdName{Id: proto.Uint32(uint32(sub.Contest)), Name: &sub.ContestName},
-		Problem: &tickets.Ticket_Problem{Id: &sub.Task, Name: &sub.ProblemName},
+		Area:     &tickets.IdName{Id: proto.Uint32(uint32(sub.AreaID)), Name: &sub.AreaName},
+		Contest:  &tickets.IdName{Id: proto.Uint32(uint32(sub.Contest)), Name: &sub.ContestName},
+		Problem:  &tickets.Ticket_Problem{Id: &sub.Task, Name: &sub.ProblemName},
 	}
 
 	teamName := sub.SchoolName
@@ -161,32 +159,27 @@ func processSubmit(g *grabber.Grabber, rows grabber.RowOrRows) error {
 }
 
 func main() {
-	tools.SetupLogWrapper()
-	defer log4go.Close()
-
-	configFileName := flag.String("config", "", "")
-	dbSpec := flag.String("db", "", "")
-	stompSpec := flag.String("messaging", "", "")
-
 	flag.Parse()
 
-	config, err := tools.MaybeReadConfigFile(*configFileName)
-
-	if config != nil {
-		if s, err := config.GetString("server", "db"); err == nil {
-			log4go.Trace("Imported db spec from config file: %s", s)
-			*dbSpec = s
-		}
+	config, err := tools.ReadConfig()
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	g, err := grabber.New(*dbSpec, allSubmitsQuery, "/amq/queue/ticket_pb")
+	dbSpec, err := config.GetString("server", "db")
 	if err != nil {
-		log.Fatalf("Creating grabber: %s", err)
+		log.Fatal(err)
 	}
 
-	g.StompConfig, err = tools.ParseStompFlagOrConfig(*stompSpec, config, "messaging")
+	g, err := grabber.New(dbSpec, allSubmitsQuery, "/amq/queue/ticket_pb")
 	if err != nil {
-		log4go.Error("Opening stomp connection to %s: %s", *stompSpec, err)
+		log.Printf("Opening db connection to %+v: %s", dbSpec, err)
+		return
+	}
+
+	g.StompConfig, err = tools.ParseStompFlagOrConfig("", config, "messaging")
+	if err != nil {
+		log.Fatalf("Opening stomp connection: %s", err)
 		return
 	}
 

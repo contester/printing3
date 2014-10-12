@@ -9,12 +9,11 @@ import (
 	"time"
 
 	"code.google.com/p/goprotobuf/proto"
-	"code.google.com/p/log4go"
 	"github.com/contester/printing3/tickets"
 	"github.com/contester/printing3/tools"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/contester/printing3/grabber"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 const PRINT_QUERY = `select
@@ -91,33 +90,27 @@ func processJob(g *grabber.Grabber, rows grabber.RowOrRows) error {
 }
 
 func main() {
-	tools.SetupLogWrapper()
-	defer log4go.Close()
-
-	configFileName := flag.String("config", "", "")
-	dbSpec := flag.String("db", "", "")
-	stompSpec := flag.String("messaging", "", "")
-
 	flag.Parse()
 
-	config, err := tools.MaybeReadConfigFile(*configFileName)
-
-	if config != nil {
-		if s, err := config.GetString("server", "db"); err == nil {
-			log4go.Trace("Imported db spec from config file: %s", s)
-			*dbSpec = s
-		}
+	config, err := tools.ReadConfig()
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	g, err := grabber.New(*dbSpec, PRINT_QUERY, "/amq/queue/source_pb")
+	dbSpec, err := config.GetString("server", "db")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	g, err := grabber.New(dbSpec, PRINT_QUERY, "/amq/queue/source_pb")
 	if err != nil {
 		log.Printf("Opening db connection to %+v: %s", dbSpec, err)
 		return
 	}
 
-	g.StompConfig, err = tools.ParseStompFlagOrConfig(*stompSpec, config, "messaging")
+	g.StompConfig, err = tools.ParseStompFlagOrConfig("", config, "messaging")
 	if err != nil {
-		log.Printf("Opening stomp connection to %+v: %s", *stompSpec, err)
+		log.Fatalf("Opening stomp connection: %s", err)
 		return
 	}
 

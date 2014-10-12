@@ -1,25 +1,23 @@
 package main
 
 import (
-	"code.google.com/p/log4go"
-	"github.com/contester/printing3/tools"
-	"github.com/contester/printing3/tickets"
-	"flag"
-	"gopkg.in/stomp.v1"
-	"code.google.com/p/goprotobuf/proto"
-	"fmt"
-        "time"
-	"strconv"
-	_ "code.google.com/p/go-charset/data"
-	"text/template"
 	"bytes"
-)
+	"flag"
+	"fmt"
+	"log"
+	"strconv"
+	"text/template"
+	"time"
 
-type server struct {
-	*tools.StompConfig
-	Workdir, Queue, Destination string
-	languages map[string]string
-}
+	"code.google.com/p/goprotobuf/proto"
+	"code.google.com/p/log4go"
+	"github.com/contester/printing3/printserver"
+	"github.com/contester/printing3/tickets"
+	"github.com/contester/printing3/tools"
+	"gopkg.in/stomp.v1"
+
+	_ "code.google.com/p/go-charset/data"
+)
 
 const DOCUMENT_TEMPLATE = `\documentclass[12pt,a4paper,oneside]{article}
 \\usepackage[utf8]{inputenc}
@@ -110,24 +108,24 @@ func (s *submitLine) ifBold(x string) string {
 }
 
 func (s *templateData) GetJudgeTime() string {
-	return time.Unix(0, int64(s.Ticket.GetJudgeTime()) * 1000).Format(time.RFC3339)
+	return time.Unix(0, int64(s.Ticket.GetJudgeTime())*1000).Format(time.RFC3339)
 }
 
 func (s *templateData) GetSubmits() []*submitLine {
 	var result []*submitLine
 	for index, submit := range s.Ticket.GetSubmit() {
 		result = append(result, &submitLine{
-				first: index == 0,
-				Ticket_Submit: submit,
-			})
+			first:         index == 0,
+			Ticket_Submit: submit,
+		})
 	}
 	return result
 }
 
-func (s *server) processIncoming(conn tools.Conn, msg *stomp.Message) error {
+func processIncoming(conn *printserver.ServerConn, msg *stomp.Message) error {
 	var job tickets.Ticket
 	if err := proto.Unmarshal(msg.Body, &job); err != nil {
-                log4go.Error("Received malformed job: %s", err)
+		log4go.Error("Received malformed job: %s", err)
 		return err
 	}
 
@@ -135,7 +133,7 @@ func (s *server) processIncoming(conn tools.Conn, msg *stomp.Message) error {
 
 	var buf bytes.Buffer
 	if err := documentTemplate.Execute(&buf, &templateData{
-			Ticket: &job,
+		Ticket: &job,
 	}); err != nil {
 		return err
 	}
@@ -146,56 +144,34 @@ func (s *server) processIncoming(conn tools.Conn, msg *stomp.Message) error {
 	}
 
 	result := tickets.BinaryJob{
-		JobId: &jobId,
+		JobId:   &jobId,
 		Printer: job.Printer,
-		Data: cBlob,
+		Data:    cBlob,
 	}
 
-	contents, err := proto.Marshal(&result)
-	if err != nil {
-		return err
-	}
-
-	return conn.SendWithReceipt(s.Destination, "application/octet-stream", contents, stomp.NewHeader("delivery-mode", "2"))
+	return conn.Send(&result)
 }
 
 func main() {
-	tools.SetupLogWrapper()
-	defer log4go.Close()
-
-	configFileName := flag.String("config", "", "")
-	stompSpec := flag.String("messaging", "", "")
-
 	flag.Parse()
 
-	var srv server
-    srv.Queue = "/amq/queue/ticket_pb"
-	srv.Destination = "/amq/queue/tex"
-
-	config, err := tools.MaybeReadConfigFile(*configFileName)
-
-	if config != nil {
-		if s, err := config.GetString("server", "stomp"); err == nil {
-			log4go.Trace("Imported db spec from config file: %s", s)
-			*stompSpec = s
-		}
-		if s, err := config.GetString("server", "queue"); err == nil {
-			log4go.Trace("Imported db spec from config file: %s", s)
-			srv.Queue = s
-		}
-		if s, err := config.GetString("directories", "temp"); err == nil {
-			log4go.Trace("Imported temp dir from config file: %s", s)
-			srv.Workdir = s
-		}
+	config, err := tools.ReadConfig()
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	srv.StompConfig, err = tools.ParseStompFlagOrConfig(*stompSpec, config, "messaging")
+	pserver := printserver.Server{
+		Source:      "/amq/queue/ticket_pb",
+		Destination: "/amq/queue/tex",
+	}
+
+	pserver.StompConfig, err = tools.ParseStompFlagOrConfig("", config, "messaging")
 	if err != nil {
-		return
+		log.Fatal(err)
 	}
 
 	for {
-		srv.ReceiveLoop(srv.Queue, true, srv.processIncoming)
+		pserver.Process(processIncoming)
 		time.Sleep(15 * time.Second)
 	}
 }

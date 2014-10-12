@@ -1,16 +1,17 @@
 package tools
 
 import (
+	"code.google.com/p/goconf/conf"
+	"flag"
+	"fmt"
 	"gopkg.in/stomp.v1"
 	"regexp"
 	"strings"
-	"code.google.com/p/goconf/conf"
-	"fmt"
 )
 
 type StompConfig struct {
 	Network, Address string
-	Options stomp.Options
+	Options          stomp.Options
 }
 
 type StompConnector interface {
@@ -22,10 +23,10 @@ func (s *StompConfig) NewConnection() (*stomp.Conn, error) {
 }
 
 var dsnPattern = regexp.MustCompile(
-			`^(?:(?P<user>.*?)(?::(?P<passwd>.*))?@)?` + // [user[:password]@]
-					`(?:(?P<net>[^\(]*)(?:\((?P<addr>[^\)]*)\))?)?` + // [net[(addr)]]
-				`\/(?P<vhost>.*?)` + // /dbname
-			`(?:\?(?P<params>[^\?]*))?$`) // [?param1=value1&paramN=valueN]
+	`^(?:(?P<user>.*?)(?::(?P<passwd>.*))?@)?` + // [user[:password]@]
+		`(?:(?P<net>[^\(]*)(?:\((?P<addr>[^\)]*)\))?)?` + // [net[(addr)]]
+		`\/(?P<vhost>.*?)` + // /dbname
+		`(?:\?(?P<params>[^\?]*))?$`) // [?param1=value1&paramN=valueN]
 
 func ParseStompDSN(dsn string) (config *StompConfig, err error) {
 	if dsn == "" {
@@ -115,4 +116,12 @@ func MaybeReadConfigFile(configName string) (*conf.ConfigFile, error) {
 		return conf.ReadConfigFile(configName)
 	}
 	return nil, fmt.Errorf("Empty config file path")
+}
+
+var (
+	configFileName = flag.String("config", "", "Config file path")
+)
+
+func ReadConfig() (*conf.ConfigFile, error) {
+	return MaybeReadConfigFile(*configFileName)
 }

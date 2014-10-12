@@ -1,29 +1,30 @@
 package main
 
 import (
-	"code.google.com/p/log4go"
-	"github.com/contester/printing3/tools"
-	"github.com/contester/printing3/tickets"
-	"flag"
-	"github.com/jjeffery/stomp"
 	"code.google.com/p/goprotobuf/proto"
+	"code.google.com/p/log4go"
+	"flag"
 	"fmt"
-	"path/filepath"
+	"github.com/contester/printing3/printserver"
+	"github.com/contester/printing3/tickets"
+	"github.com/contester/printing3/tools"
+	"github.com/jjeffery/stomp"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
-        "time"
+	"path/filepath"
+	"time"
 )
 
 type server struct {
-	*tools.StompConfig
-	Workdir, Queue, Destination string
+	Workdir string
 }
 
-func (s *server) processIncoming(conn *stomp.Conn, msg *stomp.Message) error {
+func (s *server) processIncoming(conn *printserver.ServerConn, msg *stomp.Message) error {
 	var job tickets.BinaryJob
 	if err := proto.Unmarshal(msg.Body, &job); err != nil {
-                log4go.Error("Received malformed job: %s", err)
+		log4go.Error("Received malformed job: %s", err)
 		return err
 	}
 
@@ -70,9 +71,9 @@ func (s *server) processIncoming(conn *stomp.Conn, msg *stomp.Message) error {
 	}
 
 	result := tickets.BinaryJob{
-		JobId: job.JobId,
+		JobId:   job.JobId,
 		Printer: job.Printer,
-		Data: cBlob,
+		Data:    cBlob,
 	}
 
 	content, err = proto.Marshal(&result)
@@ -80,46 +81,36 @@ func (s *server) processIncoming(conn *stomp.Conn, msg *stomp.Message) error {
 		return err
 	}
 
-	return conn.Send(s.Destination, "application/binary", content, nil)
+	return conn.Send(&result)
 }
 
 func main() {
-	tools.SetupLogWrapper()
-	defer log4go.Close()
-
-	configFileName := flag.String("config", "", "")
-	stompSpec := flag.String("messaging", "", "")
-
 	flag.Parse()
 
-	var srv server
-    srv.Queue = "/amq/queue/tex"
-	srv.Destination = "/amq/queue/printer"
-
-	config, err := tools.MaybeReadConfigFile(*configFileName)
-
-	if config != nil {
-		if s, err := config.GetString("server", "stomp"); err == nil {
-			log4go.Trace("Imported db spec from config file: %s", s)
-			*stompSpec = s
-		}
-		if s, err := config.GetString("server", "queue"); err == nil {
-			log4go.Trace("Imported db spec from config file: %s", s)
-			srv.Queue = s
-		}
-		if s, err := config.GetString("directories", "temp"); err == nil {
-			log4go.Trace("Imported temp dir from config file: %s", s)
-			srv.Workdir = s
-		}
-	}
-
-	srv.StompConfig, err = tools.ParseStompFlagOrConfig(*stompSpec, config, "messaging")
+	config, err := tools.ReadConfig()
 	if err != nil {
-		return
+		log.Fatal(err)
 	}
+
+	pserver := printserver.Server{
+		Source:      "/amq/queue/tex",
+		Destination: "/amq/queue/printer",
+	}
+
+	pserver.StompConfig, err = tools.ParseStompFlagOrConfig("", config, "messaging")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var sserver server
+	if sserver.Workdir, err = config.GetString("workdirs", "tex_processor"); err != nil {
+		log.Fatal(err)
+	}
+
+	os.MkdirAll(sserver.Workdir, os.ModePerm)
 
 	for {
-		srv.ReceiveLoop(srv.Queue, srv.processIncoming)
+		pserver.Process(sserver.processIncoming)
 		time.Sleep(15 * time.Second)
 	}
 }
