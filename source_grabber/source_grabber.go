@@ -69,13 +69,18 @@ func processJob(g *grabber.Grabber, rows grabber.RowOrRows) error {
 		Computer:  &tickets.Computer{Id: &job.ComputerID, Name: &job.ComputerName},
 		Contest:   &tickets.IdName{Id: proto.Uint32(uint32(job.ContestID)), Name: &job.ContestName},
 		Area:      &tickets.IdName{Id: proto.Uint32(uint32(job.AreaID)), Name: &job.AreaName},
-		Charset:   proto.String("cp1251"),
+		Charset:   proto.String("windows-1251"),
 		Team:      &tickets.IdName{Id: proto.Uint32(uint32(job.TeamID)), Name: &job.SchoolName},
 		Timestamp: proto.Uint64(uint64(job.Arrived.UnixNano()) / 1000),
 	}
 
 	if job.TeamNum.Valid && job.TeamNum.Int64 > 0 {
 		result.Team.Name = proto.String(result.Team.GetName() + " #" + strconv.FormatInt(job.TeamNum.Int64, 10))
+	}
+
+	result.Data, err = tickets.NewBlob(job.Data)
+	if err != nil {
+		return err
 	}
 
 	if err = g.Send(&result); err != nil {

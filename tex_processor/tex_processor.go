@@ -8,13 +8,14 @@ import (
 	"github.com/contester/printing3/printserver"
 	"github.com/contester/printing3/tickets"
 	"github.com/contester/printing3/tools"
-	"github.com/jjeffery/stomp"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"time"
+		"gopkg.in/stomp.v1"
+
 )
 
 type server struct {
@@ -42,27 +43,31 @@ func (s *server) processIncoming(conn *printserver.ServerConn, msg *stomp.Messag
 	}
 
 	cmd := exec.Command("latex", "-interaction=batchmode", sourceName)
-	cmd.Dir = jobDir
+	cmd.Dir, cmd.Stdin, cmd.Stdout, cmd.Stderr = jobDir, os.Stdin, os.Stdout, os.Stderr
 	if err = cmd.Run(); err != nil {
-		return err
+		log.Printf("Latex error: %s\n", err)
+		return nil
 	}
 
 	cmd = exec.Command("latex", "-interaction=batchmode", sourceName)
-	cmd.Dir = jobDir
+	cmd.Dir, cmd.Stdin, cmd.Stdout, cmd.Stderr = jobDir, os.Stdin, os.Stdout, os.Stderr
 	if err = cmd.Run(); err != nil {
-		return err
+		log.Printf("Latex error: %s\n", err)
+		return nil
 	}
 
 	dviName := fmt.Sprintf("%s.dvi", job.GetJobId())
 	cmd = exec.Command("dvips", "-t", "a4", dviName)
-	cmd.Dir = jobDir
+	cmd.Dir, cmd.Stdin, cmd.Stdout, cmd.Stderr = jobDir, os.Stdin, os.Stdout, os.Stderr
 	if err = cmd.Run(); err != nil {
-		return err
+		log.Printf("Dvips error: %s\n", err)
+		return nil
 	}
 
 	content, err := ioutil.ReadFile(filepath.Join(jobDir, dviName))
 	if err != nil {
-		return err
+		log.Printf("Where's my file? %s\n", err)
+		return nil
 	}
 
 	cBlob, err := tickets.NewBlob(content)
@@ -93,7 +98,7 @@ func main() {
 	}
 
 	pserver := printserver.Server{
-		Source:      "/amq/queue/tex",
+		Source:      "/amq/queue/tex_processor",
 		Destination: "/amq/queue/printer",
 	}
 

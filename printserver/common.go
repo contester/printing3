@@ -1,6 +1,8 @@
 package printserver
 
 import (
+	"log"
+
 	"code.google.com/p/goprotobuf/proto"
 	"github.com/contester/printing3/tools"
 	"gopkg.in/stomp.v1"
@@ -22,7 +24,7 @@ func (s *ServerConn) Send(msg proto.Message) error {
 		return err
 	}
 
-	return s.conn.SendWithReceipt(s.server.Destination, "application/binary", contents, stomp.NewHeader("delivery-mode", "2"))
+	return s.conn.Send(s.server.Destination, "application/octet-stream", contents, stomp.NewHeader("delivery-mode", "2"))
 }
 
 func (s *Server) Process(process func(*ServerConn, *stomp.Message) error) error {
@@ -33,7 +35,7 @@ func (s *Server) Process(process func(*ServerConn, *stomp.Message) error) error 
 		return err
 	}
 
-	sub, err := conn.Subscribe(s.Source, stomp.AckClientIndividual)
+	sub, err := conn.Subscribe(s.Source, stomp.AckClient)
 	if err != nil {
 		return err
 	}
@@ -45,15 +47,24 @@ func (s *Server) Process(process func(*ServerConn, *stomp.Message) error) error 
 		}
 		if s.Destination != "" {
 			tx := conn.Begin()
+			log.Printf("Started transaction: %+v\n", tx)
 			err = process(&ServerConn{server: s, conn: tx}, msg)
 			if err != nil {
+				log.Printf("Processing error %s, aborting\n", err)
 				tx.Abort()
 			} else {
-				tx.Ack(msg)
+				log.Printf("Acking\n")
+				if err = tx.Ack(msg); err != nil {
+					log.Printf("Ack error: %s\n", err)
+					conn.Disconnect()
+					return err
+				}
+				log.Printf("Committing\n")
 				err = tx.Commit()
 			}
+			log.Printf("Finished.\n")
 		} else {
-			err = process(nil, msg)
+			err = process(&ServerConn{server: s, conn: conn}, msg)
 			if err != nil {
 				err = conn.Nack(msg)
 			} else {

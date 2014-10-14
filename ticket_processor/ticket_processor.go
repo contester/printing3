@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"text/template"
 	"time"
+	"strings"
 
 	"code.google.com/p/goprotobuf/proto"
-	"code.google.com/p/log4go"
 	"github.com/contester/printing3/printserver"
 	"github.com/contester/printing3/tickets"
 	"github.com/contester/printing3/tools"
@@ -20,9 +20,9 @@ import (
 )
 
 const DOCUMENT_TEMPLATE = `\documentclass[12pt,a4paper,oneside]{article}
-\\usepackage[utf8]{inputenc}
-\\usepackage[english,russian]{babel}
-\\usepackage{latexsym}
+\usepackage[utf8]{inputenc}
+\usepackage[english,russian]{babel}
+\usepackage{latexsym}
 \pagestyle{empty}
 %%\setlength{\voffset}{0cm}
 \begin{document}
@@ -53,7 +53,8 @@ Problem {{.GetProblem.GetId}} & {{.GetProblem.GetName}} \\\\
 \hline
 \# & Time & Result \\\\
 \hline
-$submitLines$\hline
+{{range .GetSubmits}}{{.GetSubmitNumber}} & {{.GetTimeOffset}} & {{.GetVerdict}} \\
+{{end}}\\hline
 \end{tabular}
 \end{center}
 \end{document}`
@@ -65,8 +66,12 @@ type templateData struct {
 }
 
 type submitLine struct {
-	first bool
 	*tickets.Ticket_Submit
+	first bool
+}
+
+func (s *submitLine) GetSubmitNumber() string {
+	return s.ifBold(strconv.FormatUint(uint64(s.Ticket_Submit.GetSubmitNumber()), 10))
 }
 
 func (s *submitLine) getTimeOffset() string {
@@ -125,16 +130,18 @@ func (s *templateData) GetSubmits() []*submitLine {
 func processIncoming(conn *printserver.ServerConn, msg *stomp.Message) error {
 	var job tickets.Ticket
 	if err := proto.Unmarshal(msg.Body, &job); err != nil {
-		log4go.Error("Received malformed job: %s", err)
+		log.Printf("Received malformed job: %s", err)
 		return err
 	}
 
 	jobId := "t-" + strconv.FormatUint(uint64(job.GetSubmitId()), 10)
+	job.Team.Name = proto.String(strings.Replace(job.Team.GetName(), "#", "\\#", -1))
 
 	var buf bytes.Buffer
 	if err := documentTemplate.Execute(&buf, &templateData{
 		Ticket: &job,
 	}); err != nil {
+		log.Println(err)
 		return err
 	}
 
@@ -162,7 +169,7 @@ func main() {
 
 	pserver := printserver.Server{
 		Source:      "/amq/queue/ticket_pb",
-		Destination: "/amq/queue/tex",
+		Destination: "/amq/queue/tex_processor",
 	}
 
 	pserver.StompConfig, err = tools.ParseStompFlagOrConfig("", config, "messaging")
@@ -170,8 +177,10 @@ func main() {
 		log.Fatal(err)
 	}
 
+	log.Println(pserver)
+
 	for {
-		pserver.Process(processIncoming)
+		log.Println(pserver.Process(processIncoming))
 		time.Sleep(15 * time.Second)
 	}
 }

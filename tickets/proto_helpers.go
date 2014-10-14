@@ -26,6 +26,9 @@ func (blob *Blob) Reader() (io.Reader, error) {
 }
 
 func (blob *Blob) Bytes() ([]byte, error) {
+	if blob == nil {
+		return nil, nil
+	}
 	reader, err := blob.Reader()
 	if err != nil {
 		return nil, err

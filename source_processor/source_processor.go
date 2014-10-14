@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"text/template"
 	"time"
+	"strings"
 
 	"code.google.com/p/go-charset/charset"
 	"code.google.com/p/goprotobuf/proto"
@@ -31,14 +32,14 @@ type server struct {
 }
 
 const DOCUMENT_TEMPLATE = `\documentclass[12pt,a4paper,oneside]{article}
-\u005cusepackage[utf8]{inputenc}
-\u005cusepackage[english,russian]{babel}
-\u005cusepackage{fancyhdr}
-\u005cusepackage{lastpage}
-\u005cusepackage{latexsym}
-\u005cusepackage{color}
-\u005cusepackage{alltt}
-\u005cusepackage{bold-extra}
+\usepackage[utf8]{inputenc}
+\usepackage[english,russian]{babel}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{latexsym}
+\usepackage{color}
+\usepackage{alltt}
+\usepackage{bold-extra}
 \renewcommand{\familydefault}{\ttdefault}
 \pagestyle{fancy}
 \lhead{({{.GetComputer.GetId}}) {{.GetComputer.GetName}}}
@@ -92,6 +93,7 @@ func (s *server) processIncoming(conn *printserver.ServerConn, msg *stomp.Messag
 	}
 
 	jobId := strconv.FormatUint(uint64(job.GetJobId()), 10)
+	job.Team.Name = proto.String(strings.Replace(job.Team.GetName(), "#", "\\#", -1))
 
 	jobDir := filepath.Join(s.Workdir, jobId)
 	os.MkdirAll(jobDir, os.ModePerm) // err?
@@ -137,6 +139,7 @@ func (s *server) processIncoming(conn *printserver.ServerConn, msg *stomp.Messag
 	}
 
 	cmd := exec.Command("highlight", args...)
+        cmd.Dir, cmd.Stdin, cmd.Stdout, cmd.Stderr = jobDir, os.Stdin, os.Stdout, os.Stderr
 	if err = cmd.Run(); err != nil {
 		return err
 	}
@@ -154,9 +157,9 @@ func (s *server) processIncoming(conn *printserver.ServerConn, msg *stomp.Messag
 	}
 
 	if sourceCharset != "utf-8" {
-		contentSource, err = charset.NewReader(sourceCharset, contentSource)
+		contentSource, err = charset.NewReader("windows-1251", contentSource)
 		if err != nil {
-			return nil
+			return err
 		}
 	}
 
@@ -201,7 +204,7 @@ func main() {
 
 	pserver := printserver.Server{
 		Source:      "/amq/queue/source_pb",
-		Destination: "/amq/queue/tex",
+		Destination: "/amq/queue/tex_processor",
 	}
 
 	pserver.StompConfig, err = tools.ParseStompFlagOrConfig("", config, "messaging")
@@ -229,7 +232,9 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		sserver.languages[lang] = v
+		for _, v := range strings.Split(v, " ") {
+			sserver.languages[v] = lang
+		}
 	}
 
 	for {

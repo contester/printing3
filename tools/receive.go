@@ -6,6 +6,7 @@ import (
 
 type Conn interface {
 	SendWithReceipt(destination, contentType string, body []byte, userDefined *stomp.Header) error
+	Send(destination, contentType string, body []byte, userDefined *stomp.Header) error
 }
 
 func (pc *StompConfig) ReceiveLoop(queueName string, useTransactions bool, process func(Conn, *stomp.Message) error) error {
