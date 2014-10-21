@@ -40,6 +40,7 @@ const DOCUMENT_TEMPLATE = `\documentclass[12pt,a4paper,oneside]{article}
 \usepackage{color}
 \usepackage{alltt}
 \usepackage{bold-extra}
+\usepackage{marvosym}
 \renewcommand{\familydefault}{\ttdefault}
 \pagestyle{fancy}
 \lhead{({{.GetComputer.GetId}}) {{.GetComputer.GetName}}}
@@ -60,17 +61,17 @@ const DOCUMENT_TEMPLATE = `\documentclass[12pt,a4paper,oneside]{article}
 \begin{center}
 \begin{tabular}{|l|p{11cm}|}
 \hline
-Team & ({{.GetTeam.GetId}}) {{.GetTeam.GetName}} \\\\
+Team & ({{.GetTeam.GetId}}) {{.GetTeam.GetName}} \\
 \hline
-Computer & ({{.GetComputer.GetId}}) {{.GetComputer.GetName}} \\\\
+Computer & ({{.GetComputer.GetId}}) {{.GetComputer.GetName}} \\
 \hline
-Location & ({{.GetArea.GetId}}) {{.GetArea.GetName}} \\\\
+Location & ({{.GetArea.GetId}}) {{.GetArea.GetName}} \\
 \hline
-File name & {{.GetFilename}} \\\\
+File name & {{.GetFilename}} \\
 \hline
-Contest & ({{.GetContest.GetId}}) {{.GetContest.GetName}} \\\\
+Contest & ({{.GetContest.GetId}}) {{.GetContest.GetName}} \\
 \hline
-Pages & \pageref{LastPage} \\\\
+Pages & \pageref{LastPage} \\
 \hline
 \end{tabular}
 \end{center}
@@ -92,7 +93,7 @@ func (s *server) processIncoming(conn *printserver.ServerConn, msg *stomp.Messag
 		return err
 	}
 
-	jobId := strconv.FormatUint(uint64(job.GetJobId()), 10)
+	jobId := "s-" + strconv.FormatUint(uint64(job.GetJobId()), 10)
 	job.Team.Name = proto.String(strings.Replace(job.Team.GetName(), "#", "\\#", -1))
 
 	jobDir := filepath.Join(s.Workdir, jobId)
@@ -131,7 +132,9 @@ func (s *server) processIncoming(conn *printserver.ServerConn, msg *stomp.Messag
 		"--output=" + outputName,
 		"--fragment",
 		"--replace-quotes",
+		"--replace-tabs=4",
 		"--wrap",
+		"--wrap-no-numbers",
 		"--encoding=" + sourceCharset,
 		"--style-outfile=" + styleName}
 	if sourceLang == "txt" {
