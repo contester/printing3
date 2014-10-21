@@ -120,7 +120,12 @@ func MaybeReadConfigFile(configName string) (*conf.ConfigFile, error) {
 
 var (
 	configFileName = flag.String("config", "", "Config file path")
+        dryRun = flag.Bool("dry_run", false, "Dry run")
 )
+
+func DryRun() bool {
+  return *dryRun
+}
 
 func ReadConfig() (*conf.ConfigFile, error) {
 	return MaybeReadConfigFile(*configFileName)

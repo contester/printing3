@@ -28,7 +28,7 @@ func (s *server) processIncoming(conn *printserver.ServerConn, msg *stomp.Messag
 		return err
 	}
 
-	sourceName := fmt.Sprintf("%s-%s.ps", time.Now().Format(time.RFC3339), job.GetJobId())
+	sourceName := fmt.Sprintf("%s-%s.ps", time.Now().Format("2006-01-02T15-04-05"), job.GetJobId())
 	sourceFullName := filepath.Join(s.Workdir, sourceName)
 	if buf, err := job.Data.Bytes(); err == nil {
 		if err = ioutil.WriteFile(sourceFullName, buf, os.ModePerm); err != nil {
@@ -41,7 +41,12 @@ func (s *server) processIncoming(conn *printserver.ServerConn, msg *stomp.Messag
 	}
 
 	log.Printf("Sending job %s to printer %s", job.GetJobId(), job.GetPrinter())
+	if tools.DryRun() {
+		log.Printf("Would run: %s\n", s.Gsprint, "-printer", job.GetPrinter(), sourceFullName)
+		return nil
+	}
 	cmd := exec.Command(s.Gsprint, "-printer", job.GetPrinter(), sourceFullName)
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 	if err := cmd.Run(); err != nil {
 		log.Printf("Error printing: %s", err)
 		return err
@@ -69,7 +74,10 @@ func main() {
 
 	var srv server
 	srv.Gsprint = "gsprint.exe"
-	srv.Workdir = os.TempDir()
+	srv.Workdir, err = config.GetString("workdirs", "printer")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	for {
 		pserver.Process(srv.processIncoming)
