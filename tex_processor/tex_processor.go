@@ -64,7 +64,8 @@ func (s *server) processIncoming(conn *printserver.ServerConn, msg *stomp.Messag
 		return nil
 	}
 
-	content, err := ioutil.ReadFile(filepath.Join(jobDir, dviName))
+	psName := fmt.Sprintf("%s.ps", job.GetJobId())
+	content, err := ioutil.ReadFile(filepath.Join(jobDir, psName))
 	if err != nil {
 		log.Printf("Where's my file? %s\n", err)
 		return nil

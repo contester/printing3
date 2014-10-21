@@ -31,19 +31,19 @@ const DOCUMENT_TEMPLATE = `\documentclass[12pt,a4paper,oneside]{article}
 \vspace{1cm}
 \begin{tabular}{|l|p{11cm}|}
 \hline
-Contest {{.GetContest.GetId}} & {{.GetContest.GetName}} \\\\
+Contest {{.GetContest.GetId}} & {{.GetContest.GetName}} \\
 \hline
-Submit ID & {{.GetSubmitId}} \\\\
+Submit ID & {{.GetSubmitId}} \\
 \hline
-Judge Time & {{.GetJudgeTime}} \\\\
+Judge Time & {{.GetJudgeTime}} \\
 \hline
-Team & {{.GetTeam.GetId}} - {{.GetTeam.GetName}} \\\\
+Team & {{.GetTeam.GetId}} - {{.GetTeam.GetName}} \\
 \hline
-Location & ({{.GetArea.GetId}}) {{.GetArea.GetName}} \\\\
+Location & ({{.GetArea.GetId}}) {{.GetArea.GetName}} \\
 \hline
-Workstation & ({{.GetComputer.GetId}}) {{.GetComputer.GetName}} \\\\
+Workstation & ({{.GetComputer.GetId}}) {{.GetComputer.GetName}} \\
 \hline
-Problem {{.GetProblem.GetId}} & {{.GetProblem.GetName}} \\\\
+Problem {{.GetProblem.GetId}} & {{.GetProblem.GetName}} \\
 \hline
 \end{tabular}
 
@@ -51,10 +51,10 @@ Problem {{.GetProblem.GetId}} & {{.GetProblem.GetName}} \\\\
 
 \begin{tabular}{|r|l|l|}
 \hline
-\# & Time & Result \\\\
+\# & Time & Result \\
 \hline
 {{range .GetSubmits}}{{.GetSubmitNumber}} & {{.GetTimeOffset}} & {{.GetVerdict}} \\
-{{end}}\\hline
+{{end}}\hline
 \end{tabular}
 \end{center}
 \end{document}`
