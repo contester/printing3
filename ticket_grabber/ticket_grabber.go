@@ -15,6 +15,9 @@ import (
 
 	"github.com/contester/printing3/grabber"
 	_ "github.com/go-sql-driver/mysql"
+"gopkg.in/stomp.v1"
+	"encoding/json"
+	"github.com/contester/printing3/printserver"
 )
 
 func createSelectSubmitQuery(extraWhere string) string {
@@ -38,6 +41,7 @@ order by Submits.Arrived asc
 var (
 	allSubmitsQuery     = createSelectSubmitQuery("((Submits.Printed is null) or (Submits.Printed < Submits.Touched)) and")
 	relatedSubmitsQuery = createSelectSubmitQuery("Submits.Contest = ? and Submits.Task = ? and Submits.Team = ? and Submits.ID < ? and")
+	submitById = createSelectSubmitQuery("Submits.ID = ?")
 )
 
 type scannedSubmit struct {
@@ -52,6 +56,12 @@ type scannedSubmit struct {
 	ContestName, ProblemName, ComputerID, ComputerName string
 	AreaID                                             int64
 	AreaName                                           string
+}
+
+type submitTicket struct {
+	Submit struct {
+		Id int32 `json:"id"`
+		   } `json:"submit"`
 }
 
 func scanSubmit(r grabber.RowOrRows) (result *scannedSubmit, err error) {
@@ -115,12 +125,12 @@ func createSubmit(db *sqlx.DB, sub *scannedSubmit, submitNo int) *tickets.Ticket
 	return &result
 }
 
-func processSubmit(g *grabber.Grabber, rows grabber.RowOrRows) error {
+func processSubmit(db *sqlx.DB, sender func(msg proto.Message) error, rows grabber.RowOrRows) error {
 	sub, err := scanSubmit(rows)
 	if err != nil {
 		return err
 	}
-	related, err := findRelatedSubmits(g.DB, sub)
+	related, err := findRelatedSubmits(db, sub)
 	if err != nil {
 		return err
 	}
@@ -142,20 +152,40 @@ func processSubmit(g *grabber.Grabber, rows grabber.RowOrRows) error {
 	result.JudgeTime = proto.Uint64(uint64(sub.Touched.UnixNano() / 1000))
 
 	result.Submit = make([]*tickets.Ticket_Submit, 0)
-	result.Submit = append(result.Submit, createSubmit(g.DB, sub, len(related)+1))
+	result.Submit = append(result.Submit, createSubmit(db, sub, len(related)+1))
 	for count := len(related); count > 0; {
 		count -= 1
-		result.Submit = append(result.Submit, createSubmit(g.DB, related[count], count))
+		result.Submit = append(result.Submit, createSubmit(db, related[count], count))
 	}
 
-	if err = g.Send(&result); err != nil {
+	if err = sender(&result); err != nil {
 		return err
 	}
-	if _, err = g.DB.Exec("Update Submits set Printed = Touched where ID = ?", sub.ID); err != nil {
+	if _, err = db.Exec("Update Submits set Printed = Touched where ID = ?", sub.ID); err != nil {
 		return err
 	}
 	fmt.Printf("Printed submit %d\n", sub.ID)
 	return nil
+}
+
+type grserver struct {
+	db *sqlx.DB
+}
+
+func (g grserver) processIncoming(conn *printserver.ServerConn, msg *stomp.Message) error {
+	var ticket submitTicket
+	if err := json.Unmarshal(msg.Body, &ticket); err != nil {
+		log.Printf("Received malformed job: %s", err)
+		return err
+	}
+
+	rows, err := g.db.Query(submitById, ticket.Submit.Id)
+	if err != nil {
+		log.Printf("Error looking up submit: %s", err)
+		return nil, err
+	}
+
+	return processSubmit(g.db, conn.Send, rows)
 }
 
 func main() {
@@ -171,21 +201,25 @@ func main() {
 		log.Fatal(err)
 	}
 
-	g, err := grabber.New(dbSpec, allSubmitsQuery, "/amq/queue/ticket_pb")
+	var gs grserver
+	grserver, err = tools.CreateDb(dbSpec)
 	if err != nil {
-		log.Printf("Opening db connection to %+v: %s", dbSpec, err)
-		return
+		log.Fatal(err)
 	}
 
-	g.StompConfig, err = tools.ParseStompFlagOrConfig("", config, "messaging")
+	pserver := printserver.Server{
+		Source:      "/amq/queue/contester.tickets",
+		Destination: "/amq/queue/ticket_pb",
+	}
+
+	pserver.StompConfig, err = tools.ParseStompFlagOrConfig("", config, "messaging")
 	if err != nil {
 		log.Fatalf("Opening stomp connection: %s", err)
 		return
 	}
 
 	for {
-		g.Scan(processSubmit)
-		log.Printf("Scan complete, sleeping for 15s")
+		log.Println(pserver.Process(gs.processIncoming))
 		time.Sleep(15 * time.Second)
 	}
 }
