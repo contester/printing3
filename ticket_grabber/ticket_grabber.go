@@ -41,7 +41,7 @@ order by Submits.Arrived asc
 var (
 	allSubmitsQuery     = createSelectSubmitQuery("((Submits.Printed is null) or (Submits.Printed < Submits.Touched)) and")
 	relatedSubmitsQuery = createSelectSubmitQuery("Submits.Contest = ? and Submits.Task = ? and Submits.Team = ? and Submits.ID < ? and")
-	submitById = createSelectSubmitQuery("Submits.ID = ?")
+	submitById = createSelectSubmitQuery("Submits.ID = ? and")
 )
 
 type scannedSubmit struct {
@@ -182,10 +182,15 @@ func (g grserver) processIncoming(conn *printserver.ServerConn, msg *stomp.Messa
 	rows, err := g.db.Query(submitById, ticket.Submit.Id)
 	if err != nil {
 		log.Printf("Error looking up submit: %s", err)
-		return nil, err
+		return err
 	}
-
-	return processSubmit(g.db, conn.Send, rows)
+	defer rows.Close()
+	for rows.Next() {
+		if err = processSubmit(g.db, conn.Send, rows); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func main() {
@@ -202,7 +207,7 @@ func main() {
 	}
 
 	var gs grserver
-	grserver, err = tools.CreateDb(dbSpec)
+	gs.db, err = tools.CreateDb(dbSpec)
 	if err != nil {
 		log.Fatal(err)
 	}
