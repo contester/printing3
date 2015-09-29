@@ -14,6 +14,10 @@ import (
 
 	"github.com/contester/printing3/grabber"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+	"github.com/contester/printing3/printserver"
+"gopkg.in/stomp.v1"
+	"encoding/json"
 )
 
 const PRINT_QUERY = `select
@@ -27,7 +31,7 @@ from PrintJobs, Contests, Areas, Participants, Teams, Schools, CompLocations
 where
 Contests.ID = Participants.Contest and Contests.ID = PrintJobs.Contest and CompLocations.ID = PrintJobs.Computer and
 Teams.ID = Participants.Team and Teams.School = Schools.ID and Areas.ID = CompLocations.Location and
-Participants.LocalID = PrintJobs.Team and Printed is null
+Participants.LocalID = PrintJobs.Team and PrintJobs.ID = ?
 `
 
 type scannedJob struct {
@@ -56,7 +60,7 @@ func scanJob(r grabber.RowOrRows) (*scannedJob, error) {
 	return &job, nil
 }
 
-func processJob(g *grabber.Grabber, rows grabber.RowOrRows) error {
+func processJob(db *sqlx.DB, sender func(msg proto.Message) error, rows grabber.RowOrRows) error {
 	job, err := scanJob(rows)
 	if err != nil {
 		return err
@@ -83,14 +87,43 @@ func processJob(g *grabber.Grabber, rows grabber.RowOrRows) error {
 		return err
 	}
 
-	if err = g.Send(&result); err != nil {
+	if err = sender(&result); err != nil {
 		return err
 	}
 
-	if _, err = g.DB.Exec("Update PrintJobs set Printed = 255 where ID = ?", job.JobID); err != nil {
+	if _, err = db.Exec("Update PrintJobs set Printed = 255 where ID = ?", job.JobID); err != nil {
 		return err
 	}
 	fmt.Printf("Printed job %d\n", job.JobID)
+	return nil
+}
+
+type printRequest struct {
+	Id int32 `json:"id"`
+}
+
+type grserver struct {
+	db *sqlx.DB
+}
+
+func (g grserver) processIncoming(conn *printserver.ServerConn, msg *stomp.Message) error {
+	var ticket printRequest
+	if err := json.Unmarshal(msg.Body, &ticket); err != nil {
+		log.Printf("Received malformed job: %s", err)
+		return err
+	}
+
+	rows, err := g.db.Query(PRINT_QUERY, ticket.Id)
+	if err != nil {
+		log.Printf("Error looking up submit: %s", err)
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		if err = processJob(g.db, conn.Send, rows); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -107,21 +140,25 @@ func main() {
 		log.Fatal(err)
 	}
 
-	g, err := grabber.New(dbSpec, PRINT_QUERY, "/amq/queue/source_pb")
+	var gs grserver
+	gs.db, err = tools.CreateDb(dbSpec)
 	if err != nil {
-		log.Printf("Opening db connection to %+v: %s", dbSpec, err)
-		return
+		log.Fatal(err)
 	}
 
-	g.StompConfig, err = tools.ParseStompFlagOrConfig("", config, "messaging")
+	pserver := printserver.Server{
+		Source:      "/amq/queue/contester.printrequests",
+		Destination: "/amq/queue/source_pb",
+	}
+
+	pserver.StompConfig, err = tools.ParseStompFlagOrConfig("", config, "messaging")
 	if err != nil {
 		log.Fatalf("Opening stomp connection: %s", err)
 		return
 	}
 
 	for {
-		g.Scan(processJob)
-		log.Printf("Scan complete, sleeping for 15s")
+		log.Println(pserver.Process(gs.processIncoming))
 		time.Sleep(15 * time.Second)
 	}
 }
