@@ -51,9 +51,9 @@ Problem {{.GetProblem.GetId}} & {{.GetProblem.GetName}} \\
 
 \begin{tabular}{|r|l|l|}
 \hline
-\# & Time & Result \\
+Time & Result \\
 \hline
-{{range .GetSubmits}}{{.GetSubmitNumber}} & {{.GetTimeOffset}} & {{.GetVerdict}} \\
+{{.GetTimeOffset}} & {{.GetVerdict}} \\
 {{end}}\hline
 \end{tabular}
 \end{center}
