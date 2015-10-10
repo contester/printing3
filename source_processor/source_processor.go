@@ -86,6 +86,15 @@ type templateData struct {
 	StyleText, IncludeText string
 }
 
+func texEscape(s string) string {
+	s = strings.Replace(s, "%", "\\%", -1)
+	s = strings.Replace(s, "$", "\\$", -1)
+	s = strings.Replace(s, "_", "\\_", -1)
+	s = strings.Replace(s, "{", "\\{", -1)
+	s = strings.Replace(s, "#", "\\#", -1)
+	return s
+}
+
 func (s *server) processIncoming(conn *printserver.ServerConn, msg *stomp.Message) error {
 	var job tickets.PrintJob
 	if err := proto.Unmarshal(msg.Body, &job); err != nil {
@@ -94,7 +103,7 @@ func (s *server) processIncoming(conn *printserver.ServerConn, msg *stomp.Messag
 	}
 
 	jobId := "s-" + strconv.FormatUint(uint64(job.GetJobId()), 10)
-	job.Team.Name = proto.String(strings.Replace(job.Team.GetName(), "#", "\\#", -1))
+	job.Team.Name = proto.String(texEscape(job.Team.GetName()))
 
 	jobDir := filepath.Join(s.Workdir, jobId)
 	os.MkdirAll(jobDir, os.ModePerm) // err?
@@ -147,6 +156,7 @@ func (s *server) processIncoming(conn *printserver.ServerConn, msg *stomp.Messag
 		return err
 	}
 
+	job.Filename = proto.String(texEscape(job.GetFilename()))
 	data := templateData{
 		PrintJob: &job,
 	}
