@@ -28,6 +28,11 @@ const DOCUMENT_TEMPLATE = `\documentclass[12pt,a4paper,oneside]{article}
 \begin{document}
 \begin{center}
 {\LARGE\textbf{Submission results}}\newline
+
+\vspace{1cm}
+
+{\LARGE\textbf{Team: {{.GetTeam.GetName}} }}\newline
+{\LARGE\textbf{Location: {{.GetArea.GetName}} - {{.GetComputer.GetName}}}}\newline
 \vspace{1cm}
 \begin{tabular}{|l|p{11cm}|}
 \hline
@@ -53,7 +58,7 @@ Problem {{.GetProblem.GetId}} & {{.GetProblem.GetName}} \\
 \hline
 Time & Result \\
 \hline
-{{.GetTimeOffset}} & {{.GetVerdict}} \\
+{{range .GetSubmits}}{{.GetTimeOffset}} & {{.GetVerdict}} \\
 {{end}}\hline
 \end{tabular}
 \end{center}
