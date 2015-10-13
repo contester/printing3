@@ -15,7 +15,7 @@ import (
 	"time"
 	"strings"
 
-	"code.google.com/p/go-charset/charset"
+	// "code.google.com/p/go-charset/charset"
 	"code.google.com/p/goprotobuf/proto"
 	"code.google.com/p/log4go"
 	"github.com/contester/printing3/tickets"
@@ -35,8 +35,10 @@ const DOCUMENT_TEMPLATE = `\documentclass[12pt,a4paper,oneside]{article}
 \usepackage[utf8]{inputenc}
 \usepackage[english,russian]{babel}
 \usepackage{fancyhdr}
+\usepackage{fancyvrb}
 \usepackage{lastpage}
 \usepackage{latexsym}
+\usepackage{amsmath}
 \usepackage{color}
 \usepackage{alltt}
 \usepackage{bold-extra}
@@ -134,7 +136,7 @@ func (s *server) processIncoming(conn *printserver.ServerConn, msg *stomp.Messag
 		sourceCharset = "cp1251"
 	}
 
-	args := []string{"--out-format=latex",
+	/*args := []string{"--out-format=latex",
 		"--syntax=" + sourceLang,
 		"--style=print",
 		"--input=" + sourceName,
@@ -149,10 +151,21 @@ func (s *server) processIncoming(conn *printserver.ServerConn, msg *stomp.Messag
 	if sourceLang == "txt" {
 		args = append(args, "--line-numbers")
 	}
-
-	cmd := exec.Command("highlight", args...)
+*/
+	args := []string{"-l", "text", "-f", "latex", "-O", "linenos=1,tabsize=4", "-o", outputName, sourceName}
+	cmd := exec.Command("pygmentize", args...)
         cmd.Dir, cmd.Stdin, cmd.Stdout, cmd.Stderr = jobDir, os.Stdin, os.Stdout, os.Stderr
 	if err = cmd.Run(); err != nil {
+		return err
+	}
+
+	cmd = exec.Command("pygmentize", "-f", "latex", "-S", "bw")
+	out, err := cmd.Output()
+	if err != nil {
+		return err
+	}
+
+	if err = ioutil.WriteFile(filepath.Join(jobDir, styleName), out, os.ModePerm); err != nil {
 		return err
 	}
 
@@ -167,13 +180,6 @@ func (s *server) processIncoming(conn *printserver.ServerConn, msg *stomp.Messag
 		defer contentFile.Close()
 	} else {
 		return err
-	}
-
-	if sourceCharset != "utf-8" {
-		contentSource, err = charset.NewReader("windows-1251", contentSource)
-		if err != nil {
-			return err
-		}
 	}
 
 	contents, err := ioutil.ReadAll(contentSource)
