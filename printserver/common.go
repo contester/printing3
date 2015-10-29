@@ -3,7 +3,7 @@ package printserver
 import (
 	"log"
 
-	"code.google.com/p/goprotobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/contester/printing3/tools"
 	"gopkg.in/stomp.v1"
 )
