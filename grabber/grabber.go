@@ -1,7 +1,7 @@
 package grabber
 
 import (
-	"code.google.com/p/goprotobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/contester/printing3/tools"
 	"github.com/jmoiron/sqlx"
 	"gopkg.in/stomp.v1"

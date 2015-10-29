@@ -16,7 +16,7 @@ import (
 	"strings"
 
 	// "code.google.com/p/go-charset/charset"
-	"code.google.com/p/goprotobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"code.google.com/p/log4go"
 	"github.com/contester/printing3/tickets"
 	"github.com/contester/printing3/tools"
