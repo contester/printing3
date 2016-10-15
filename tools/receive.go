@@ -1,12 +1,12 @@
 package tools
 
 import (
-	"gopkg.in/stomp.v1"
+	"gopkg.in/stomp.v2"
+	"gopkg.in/stomp.v2/frame"
 )
 
 type Conn interface {
-	SendWithReceipt(destination, contentType string, body []byte, userDefined *stomp.Header) error
-	Send(destination, contentType string, body []byte, userDefined *stomp.Header) error
+	Send(destination, contentType string, body []byte, opts ...func(*frame.Frame)error) error
 }
 
 func (pc *StompConfig) ReceiveLoop(queueName string, useTransactions bool, process func(Conn, *stomp.Message) error) error {

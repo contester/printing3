@@ -14,20 +14,33 @@ import (
 	"github.com/jmoiron/sqlx"
 
 	"encoding/json"
-	"github.com/contester/printing3/grabber"
 	"github.com/contester/printing3/printserver"
 	_ "github.com/go-sql-driver/mysql"
-	"gopkg.in/stomp.v1"
+	"gopkg.in/stomp.v2"
 )
 
 func createSelectSubmitQuery(extraWhere string) string {
 	return `select
-Submits.Contest, Submits.Team, Submits.Touched, Submits.Task, Submits.Compiled,
-(unix_timestamp(Submits.Arrived) - unix_timestamp(Contests.Start)) as Arrived,
-Submits.Passed, Submits.Taken, Submits.ID, Areas.Printer, Contests.SchoolMode, Submits.TestingID,
-Schools.Name, Teams.Num, Contests.Name as ContestName,
-Problems.Name as ProblemName, inet_ntoa(Submits.Computer) as ComputerID, CompLocations.Name as ComputerName,
-Areas.ID as AreaID, Areas.Name as AreaName
+Submits.Contest as contest,
+Submits.Team as team,
+Submits.Touched as touched,
+Submits.Task as task,
+Submits.Compiled as compiled,
+(unix_timestamp(Submits.Arrived) - unix_timestamp(Contests.Start)) as arrived,
+Submits.Passed as passed,
+Submits.Taken as taken,
+Submits.ID as id,
+Areas.Printer as printer,
+Contests.SchoolMode as schoolmode,
+Submits.TestingID as testingid,
+Schools.Name as schoolname,
+Teams.Num as teamnum,
+Contests.Name as contestname,
+Problems.Name as problemname,
+inet_ntoa(Submits.Computer) as computerid,
+CompLocations.Name as computername,
+Areas.ID as areaid,
+Areas.Name as areaname
 from Submits, Contests, Areas, CompLocations, Teams, Schools, Participants, Problems
 where
 Contests.ID = Submits.Contest and Submits.Finished and ` + extraWhere + `
@@ -64,18 +77,20 @@ type submitTicket struct {
 	} `json:"submit"`
 }
 
-func scanSubmit(r grabber.RowOrRows) (result *scannedSubmit, err error) {
+type hasScanx interface {
+	StructScan(interface{}) error
+}
+
+func scanSubmit(r hasScanx) (result *scannedSubmit, err error) {
 	var sub scannedSubmit
-	if err = r.Scan(&sub.Contest, &sub.Team, &sub.Touched, &sub.Task, &sub.Compiled, &sub.Arrived, &sub.Passed,
-		&sub.Taken, &sub.ID, &sub.Printer, &sub.SchoolMode, &sub.TestingID, &sub.SchoolName, &sub.TeamNum,
-		&sub.ContestName, &sub.ProblemName, &sub.ComputerID, &sub.ComputerName, &sub.AreaID, &sub.AreaName); err == nil {
+	if err = r.StructScan(&sub); err == nil {
 		result = &sub
 	}
 	return
 }
 
 func findRelatedSubmits(db *sqlx.DB, sub *scannedSubmit) ([]*scannedSubmit, error) {
-	rows, err := db.Query(relatedSubmitsQuery, sub.Contest, sub.Task, sub.Team, sub.ID)
+	rows, err := db.Queryx(relatedSubmitsQuery, sub.Contest, sub.Task, sub.Team, sub.ID)
 	if err != nil {
 		log.Printf("Error scanning for related submits: %s", err)
 		return nil, err
@@ -84,8 +99,7 @@ func findRelatedSubmits(db *sqlx.DB, sub *scannedSubmit) ([]*scannedSubmit, erro
 	result := make([]*scannedSubmit, 0)
 
 	for rows.Next() {
-		s, _ := scanSubmit(rows)
-		if s != nil {
+		if s, err := scanSubmit(rows); err == nil {
 			result = append(result, s)
 		}
 	}
@@ -125,7 +139,7 @@ func createSubmit(db *sqlx.DB, sub *scannedSubmit, submitNo int) *tickets.Ticket
 	return &result
 }
 
-func processSubmit(db *sqlx.DB, sender func(msg proto.Message) error, rows grabber.RowOrRows) error {
+func processSubmit(db *sqlx.DB, sender func(msg proto.Message) error, rows hasScanx) error {
 	sub, err := scanSubmit(rows)
 	if err != nil {
 		fmt.Printf("scan error: %s", err)
@@ -180,7 +194,7 @@ func (g grserver) processIncoming(conn *printserver.ServerConn, msg *stomp.Messa
 		return err
 	}
 
-	rows, err := g.db.Query(submitById, ticket.Submit.Id)
+	rows, err := g.db.Queryx(submitById, ticket.Submit.Id)
 	if err != nil {
 		log.Printf("Error looking up submit: %s", err)
 		return err
@@ -202,13 +216,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	dbSpec, err := config.GetString("server", "db")
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	var gs grserver
-	gs.db, err = tools.CreateDb(dbSpec)
+	gs.db, err = tools.CreateDb(config.Server.Db)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -218,7 +227,7 @@ func main() {
 		Destination: "/amq/queue/ticket_pb",
 	}
 
-	pserver.StompConfig, err = tools.ParseStompFlagOrConfig("", config, "messaging")
+	pserver.StompConfig = &config.Messaging
 	if err != nil {
 		log.Fatalf("Opening stomp connection: %s", err)
 		return

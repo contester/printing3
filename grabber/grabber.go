@@ -4,7 +4,7 @@ import (
 	"github.com/contester/printing3/tools"
 	"github.com/golang/protobuf/proto"
 	"github.com/jmoiron/sqlx"
-	"gopkg.in/stomp.v1"
+	"gopkg.in/stomp.v2"
 	"log"
 	"time"
 )

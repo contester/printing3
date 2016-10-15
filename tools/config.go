@@ -5,16 +5,12 @@ import (
 	"regexp"
 
 	"gopkg.in/gcfg.v1"
-	"gopkg.in/stomp.v1"
+	"gopkg.in/stomp.v2"
 )
-
-type StompParam struct {
-	A, B string
-}
 
 type StompConfig struct {
 	Network, Address, Vhost, Username, Password string
-	Params                                      []StompParam
+	Params                                      map[string]string
 }
 
 type StompConnector interface {
@@ -22,7 +18,18 @@ type StompConnector interface {
 }
 
 func (s *StompConfig) NewConnection() (*stomp.Conn, error) {
-	return stomp.Dial("tcp", s.Address, s.BuildOptions())
+	var opts []func(*stomp.Conn)error
+	network := s.Network
+	if network == "" {
+		network = "tcp"
+	}
+	if s.Username != "" {
+		opts = append(opts, stomp.ConnOpt.Login(s.Username, s.Password))
+	}
+	if s.Vhost != "" {
+		opts = append(opts, stomp.ConnOpt.Host(s.Vhost))
+	}
+	return stomp.Dial(network, s.Address, opts...)
 }
 
 var dsnPattern = regexp.MustCompile(
@@ -80,13 +87,6 @@ func ParseStompDSN(dsn string) (config *StompConfig, err error) {
 	return
 }
 */
-func (s *StompConfig) BuildOptions() stomp.Options {
-	return stomp.Options{
-		Login:    s.Username,
-		Passcode: s.Password,
-		Host:     s.Vhost,
-	}
-}
 
 type GlobalConfig struct {
 	Server struct {

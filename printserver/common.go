@@ -5,7 +5,8 @@ import (
 
 	"github.com/contester/printing3/tools"
 	"github.com/golang/protobuf/proto"
-	"gopkg.in/stomp.v1"
+	"gopkg.in/stomp.v2"
+	"gopkg.in/stomp.v2/frame"
 )
 
 type Server struct {
@@ -24,7 +25,8 @@ func (s *ServerConn) Send(msg proto.Message) error {
 		return err
 	}
 
-	return s.conn.Send(s.server.Destination, "application/octet-stream", contents, stomp.NewHeader("delivery-mode", "2"))
+	return s.conn.Send(s.server.Destination, "application/octet-stream", contents,
+		stomp.SendOpt.Header(frame.NewHeader("delivery-mode", "2")))
 }
 
 func (s *Server) Process(process func(*ServerConn, *stomp.Message) error) error {
