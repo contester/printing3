@@ -8,16 +8,16 @@ import (
 	"strconv"
 	"time"
 
-	"code.google.com/p/goprotobuf/proto"
 	"github.com/contester/printing3/tickets"
 	"github.com/contester/printing3/tools"
+	"github.com/golang/protobuf/proto"
 	"github.com/jmoiron/sqlx"
 
-	"github.com/contester/printing3/grabber"
-	_ "github.com/go-sql-driver/mysql"
-"gopkg.in/stomp.v1"
 	"encoding/json"
+	"github.com/contester/printing3/grabber"
 	"github.com/contester/printing3/printserver"
+	_ "github.com/go-sql-driver/mysql"
+	"gopkg.in/stomp.v1"
 )
 
 func createSelectSubmitQuery(extraWhere string) string {
@@ -41,7 +41,7 @@ order by Submits.Arrived asc
 var (
 	allSubmitsQuery     = createSelectSubmitQuery("((Submits.Printed is null) or (Submits.Printed < Submits.Touched)) and")
 	relatedSubmitsQuery = createSelectSubmitQuery("Submits.Contest = ? and Submits.Task = ? and Submits.Team = ? and Submits.ID < ? and")
-	submitById = createSelectSubmitQuery("Submits.ID = ? and")
+	submitById          = createSelectSubmitQuery("Submits.ID = ? and")
 )
 
 type scannedSubmit struct {
@@ -61,7 +61,7 @@ type scannedSubmit struct {
 type submitTicket struct {
 	Submit struct {
 		Id int32 `json:"id"`
-		   } `json:"submit"`
+	} `json:"submit"`
 }
 
 func scanSubmit(r grabber.RowOrRows) (result *scannedSubmit, err error) {
@@ -128,6 +128,7 @@ func createSubmit(db *sqlx.DB, sub *scannedSubmit, submitNo int) *tickets.Ticket
 func processSubmit(db *sqlx.DB, sender func(msg proto.Message) error, rows grabber.RowOrRows) error {
 	sub, err := scanSubmit(rows)
 	if err != nil {
+		fmt.Printf("scan error: %s", err)
 		return err
 	}
 	related, err := findRelatedSubmits(db, sub)

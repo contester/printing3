@@ -1,17 +1,20 @@
 package tools
 
 import (
-	"code.google.com/p/goconf/conf"
 	"flag"
-	"fmt"
-	"gopkg.in/stomp.v1"
 	"regexp"
-	"strings"
+
+	"gopkg.in/gcfg.v1"
+	"gopkg.in/stomp.v1"
 )
 
+type StompParam struct {
+	A, B string
+}
+
 type StompConfig struct {
-	Network, Address string
-	Options          stomp.Options
+	Network, Address, Vhost, Username, Password string
+	Params                                      []StompParam
 }
 
 type StompConnector interface {
@@ -19,7 +22,7 @@ type StompConnector interface {
 }
 
 func (s *StompConfig) NewConnection() (*stomp.Conn, error) {
-	return stomp.Dial(s.Network, s.Address, s.Options)
+	return stomp.Dial("tcp", s.Address, s.BuildOptions())
 }
 
 var dsnPattern = regexp.MustCompile(
@@ -27,13 +30,13 @@ var dsnPattern = regexp.MustCompile(
 		`(?:(?P<net>[^\(]*)(?:\((?P<addr>[^\)]*)\))?)?` + // [net[(addr)]]
 		`\/(?P<vhost>.*?)` + // /dbname
 		`(?:\?(?P<params>[^\?]*))?$`) // [?param1=value1&paramN=valueN]
-
+/*
 func ParseStompDSN(dsn string) (config *StompConfig, err error) {
 	if dsn == "" {
 		return nil, fmt.Errorf("Empty stomp spec!")
 	}
 
-	config = &StompConfig{}
+	var config = &StompConfig{}
 
 	matches := dsnPattern.FindStringSubmatch(dsn)
 	if matches == nil {
@@ -76,29 +79,26 @@ func ParseStompDSN(dsn string) (config *StompConfig, err error) {
 
 	return
 }
-
-func ParseStompConfig(config *conf.ConfigFile, section string) (result *StompConfig, err error) {
-	var cf StompConfig
-	cf.Network = "tcp"
-	if cf.Address, err = config.GetString(section, "address"); err != nil {
-		return
+*/
+func (s *StompConfig) BuildOptions() stomp.Options {
+	return stomp.Options{
+		Login:    s.Username,
+		Passcode: s.Password,
+		Host:     s.Vhost,
 	}
-
-	if cf.Options.Login, err = config.GetString(section, "username"); err != nil {
-		return
-	}
-
-	if cf.Options.Passcode, err = config.GetString(section, "password"); err != nil {
-		return
-	}
-
-	if cf.Options.Host, err = config.GetString(section, "vhost"); err != nil {
-		return
-	}
-
-	return &cf, nil
 }
 
+type GlobalConfig struct {
+	Server struct {
+		Db string
+	}
+	Messaging StompConfig
+	Workdirs  struct {
+		TexProcessor, SourceProcessor string
+	}
+}
+
+/*
 func ParseStompFlagOrConfig(flagValue string, config *conf.ConfigFile, section string) (result *StompConfig, err error) {
 	if result, err = ParseStompDSN(flagValue); err == nil {
 		return
@@ -110,23 +110,17 @@ func ParseStompFlagOrConfig(flagValue string, config *conf.ConfigFile, section s
 
 	return
 }
-
-func MaybeReadConfigFile(configName string) (*conf.ConfigFile, error) {
-	if configName != "" {
-		return conf.ReadConfigFile(configName)
-	}
-	return nil, fmt.Errorf("Empty config file path")
-}
-
+*/
 var (
 	configFileName = flag.String("config", "", "Config file path")
-        dryRun = flag.Bool("dry_run", false, "Dry run")
+	dryRun         = flag.Bool("dry_run", false, "Dry run")
 )
 
 func DryRun() bool {
-  return *dryRun
+	return *dryRun
 }
 
-func ReadConfig() (*conf.ConfigFile, error) {
-	return MaybeReadConfigFile(*configFileName)
+func ReadConfig() (*GlobalConfig, error) {
+	var gc GlobalConfig
+	return &gc, gcfg.ReadFileInto(&gc, *configFileName)
 }
