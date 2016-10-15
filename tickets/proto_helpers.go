@@ -3,7 +3,7 @@ package tickets
 
 import (
 	"bytes"
-	"code.google.com/p/goprotobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"compress/zlib"
 	"crypto/sha1"
 	"io"
