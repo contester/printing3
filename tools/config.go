@@ -18,7 +18,7 @@ type StompConnector interface {
 }
 
 func (s *StompConfig) NewConnection() (*stomp.Conn, error) {
-	var opts []func(*stomp.Conn)error
+	var opts []func(*stomp.Conn) error
 	network := s.Network
 	if network == "" {
 		network = "tcp"
@@ -94,8 +94,10 @@ type GlobalConfig struct {
 	}
 	Messaging StompConfig
 	Workdirs  struct {
-		TexProcessor, SourceProcessor string
+		TexProcessor    string `gcfg:"tex-processor"`
+		SourceProcessor string `gcfg:"source-processor"`
 	}
+	Languages map[string]string
 }
 
 /*
