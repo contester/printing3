@@ -11,19 +11,18 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"text/template"
 	"time"
-	"strings"
 
 	// "code.google.com/p/go-charset/charset"
-	"github.com/golang/protobuf/proto"
-	"code.google.com/p/log4go"
 	"github.com/contester/printing3/tickets"
 	"github.com/contester/printing3/tools"
-	"gopkg.in/stomp.v1"
+	"github.com/golang/protobuf/proto"
+	"gopkg.in/stomp.v2"
 
-	_ "code.google.com/p/go-charset/data"
 	"github.com/contester/printing3/printserver"
+	_ "github.com/paulrosania/go-charset/data"
 )
 
 type server struct {
@@ -100,7 +99,7 @@ func texEscape(s string) string {
 func (s *server) processIncoming(conn *printserver.ServerConn, msg *stomp.Message) error {
 	var job tickets.PrintJob
 	if err := proto.Unmarshal(msg.Body, &job); err != nil {
-		log4go.Error("Received malformed job: %s", err)
+		log.Printf("Received malformed job: %s", err)
 		return err
 	}
 
@@ -151,10 +150,10 @@ func (s *server) processIncoming(conn *printserver.ServerConn, msg *stomp.Messag
 	if sourceLang == "txt" {
 		args = append(args, "--line-numbers")
 	}
-*/
+	*/
 	args := []string{"-l", "text", "-f", "latex", "-O", "linenos=1,tabsize=4", "-o", outputName, sourceName}
 	cmd := exec.Command("pygmentize", args...)
-        cmd.Dir, cmd.Stdin, cmd.Stdout, cmd.Stderr = jobDir, os.Stdin, os.Stdout, os.Stderr
+	cmd.Dir, cmd.Stdin, cmd.Stdout, cmd.Stderr = jobDir, os.Stdin, os.Stdout, os.Stderr
 	if err = cmd.Run(); err != nil {
 		return err
 	}
@@ -224,35 +223,22 @@ func main() {
 	pserver := printserver.Server{
 		Source:      "/amq/queue/source_pb",
 		Destination: "/amq/queue/tex_processor",
-	}
-
-	pserver.StompConfig, err = tools.ParseStompFlagOrConfig("", config, "messaging")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	languageNames, err := config.GetOptions("languages")
-	if err != nil {
-		log.Fatal(err)
+		StompConfig: &config.Messaging,
 	}
 
 	sserver := server{
 		languages: make(map[string]string),
-	}
-
-	if sserver.Workdir, err = config.GetString("workdirs", "source_processor"); err != nil {
-		log.Fatal(err)
+		Workdir:   config.Workdirs.SourceProcessor,
 	}
 
 	os.MkdirAll(sserver.Workdir, os.ModePerm)
 
-	for _, lang := range languageNames {
-		v, err := config.GetString("languages", lang)
+	for k, v := range config.Languages {
 		if err != nil {
 			log.Fatal(err)
 		}
-		for _, v := range strings.Split(v, " ") {
-			sserver.languages[v] = lang
+		for _, v2 := range strings.Split(v.Ext, " ") {
+			sserver.languages[v2] = k
 		}
 	}
 

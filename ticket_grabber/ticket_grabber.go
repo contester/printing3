@@ -82,6 +82,7 @@ type hasScanx interface {
 }
 
 func scanSubmit(r hasScanx) (result *scannedSubmit, err error) {
+	log.Printf("scanning r\n")
 	var sub scannedSubmit
 	if err = r.StructScan(&sub); err == nil {
 		result = &sub
@@ -145,6 +146,7 @@ func processSubmit(db *sqlx.DB, sender func(msg proto.Message) error, rows hasSc
 		fmt.Printf("scan error: %s", err)
 		return err
 	}
+	log.Printf("processSubmit: %s\n", sub)
 	related, err := findRelatedSubmits(db, sub)
 	if err != nil {
 		return err
@@ -197,7 +199,7 @@ func (g grserver) processIncoming(conn *printserver.ServerConn, msg *stomp.Messa
 	rows, err := g.db.Queryx(submitById, ticket.Submit.Id)
 	if err != nil {
 		log.Printf("Error looking up submit: %s", err)
-		return err
+		return nil
 	}
 	defer rows.Close()
 	for rows.Next() {

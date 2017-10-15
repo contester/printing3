@@ -8,16 +8,16 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/contester/printing3/tickets"
 	"github.com/contester/printing3/tools"
+	"github.com/golang/protobuf/proto"
 
+	"encoding/json"
 	"github.com/contester/printing3/grabber"
+	"github.com/contester/printing3/printserver"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
-	"github.com/contester/printing3/printserver"
-"gopkg.in/stomp.v1"
-	"encoding/json"
+	"gopkg.in/stomp.v2"
 )
 
 const PRINT_QUERY = `select
@@ -135,13 +135,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	dbSpec, err := config.GetString("server", "db")
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	var gs grserver
-	gs.db, err = tools.CreateDb(dbSpec)
+	gs.db, err = tools.CreateDb(config.Server.Db)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -149,12 +144,7 @@ func main() {
 	pserver := printserver.Server{
 		Source:      "/amq/queue/contester.printrequests",
 		Destination: "/amq/queue/source_pb",
-	}
-
-	pserver.StompConfig, err = tools.ParseStompFlagOrConfig("", config, "messaging")
-	if err != nil {
-		log.Fatalf("Opening stomp connection: %s", err)
-		return
+		StompConfig: &config.Messaging,
 	}
 
 	for {

@@ -1,21 +1,19 @@
 package main
 
 import (
-	"github.com/golang/protobuf/proto"
-	"code.google.com/p/log4go"
 	"flag"
 	"fmt"
 	"github.com/contester/printing3/printserver"
 	"github.com/contester/printing3/tickets"
 	"github.com/contester/printing3/tools"
+	"github.com/golang/protobuf/proto"
+	"gopkg.in/stomp.v2"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"time"
-		"gopkg.in/stomp.v1"
-
 )
 
 type server struct {
@@ -25,7 +23,7 @@ type server struct {
 func (s *server) processIncoming(conn *printserver.ServerConn, msg *stomp.Message) error {
 	var job tickets.BinaryJob
 	if err := proto.Unmarshal(msg.Body, &job); err != nil {
-		log4go.Error("Received malformed job: %s", err)
+		log.Printf("Received malformed job: %s", err)
 		return err
 	}
 
@@ -103,15 +101,10 @@ func main() {
 		Destination: "/amq/queue/printer",
 	}
 
-	pserver.StompConfig, err = tools.ParseStompFlagOrConfig("", config, "messaging")
-	if err != nil {
-		log.Fatal(err)
-	}
+	pserver.StompConfig = &config.Messaging
 
 	var sserver server
-	if sserver.Workdir, err = config.GetString("workdirs", "tex_processor"); err != nil {
-		log.Fatal(err)
-	}
+	sserver.Workdir = config.Workdirs.TexProcessor
 
 	os.MkdirAll(sserver.Workdir, os.ModePerm)
 

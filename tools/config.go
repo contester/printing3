@@ -97,7 +97,7 @@ type GlobalConfig struct {
 		TexProcessor    string `gcfg:"tex-processor"`
 		SourceProcessor string `gcfg:"source-processor"`
 	}
-	Languages map[string]string
+	Languages map[string]*struct{ Ext string }
 }
 
 /*

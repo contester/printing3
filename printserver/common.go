@@ -20,6 +20,10 @@ type ServerConn struct {
 }
 
 func (s *ServerConn) Send(msg proto.Message) error {
+	if s.server.Destination == "" {
+		return nil
+	}
+	log.Printf("send: %s", msg)
 	contents, err := proto.Marshal(msg)
 	if err != nil {
 		return err

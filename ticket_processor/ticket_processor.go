@@ -6,17 +6,17 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 	"text/template"
 	"time"
-	"strings"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/contester/printing3/printserver"
 	"github.com/contester/printing3/tickets"
 	"github.com/contester/printing3/tools"
-	"gopkg.in/stomp.v1"
+	"github.com/golang/protobuf/proto"
+	"gopkg.in/stomp.v2"
 
-	_ "code.google.com/p/go-charset/data"
+	_ "github.com/paulrosania/go-charset/data"
 )
 
 const DOCUMENT_TEMPLATE = `\documentclass[12pt,a4paper,oneside]{article}
@@ -177,10 +177,7 @@ func main() {
 		Destination: "/amq/queue/tex_processor",
 	}
 
-	pserver.StompConfig, err = tools.ParseStompFlagOrConfig("", config, "messaging")
-	if err != nil {
-		log.Fatal(err)
-	}
+	pserver.StompConfig = &config.Messaging
 
 	log.Println(pserver)
 

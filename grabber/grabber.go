@@ -5,6 +5,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/jmoiron/sqlx"
 	"gopkg.in/stomp.v2"
+	"gopkg.in/stomp.v2/frame"
 	"log"
 	"time"
 )
@@ -73,8 +74,9 @@ func (s *Grabber) Send(msg proto.Message) error {
 			}
 		}
 
-		if err = s.Conn.SendWithReceipt(s.Destination, "application/octet-stream", body,
-			stomp.NewHeader("delivery-mode", "2")); err == nil {
+		if err = s.Conn.Send(s.Destination, "application/octet-stream", body,
+			stomp.SendOpt.Receipt,
+			stomp.SendOpt.Header(frame.NewHeader("delivery-mode", "2"))); err == nil {
 			break
 		}
 		s.Conn.Disconnect()
