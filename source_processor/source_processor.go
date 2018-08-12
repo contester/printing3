@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -15,13 +14,14 @@ import (
 	"text/template"
 	"time"
 
-	// "code.google.com/p/go-charset/charset"
+	"github.com/contester/printing3/printserver"
 	"github.com/contester/printing3/tickets"
 	"github.com/contester/printing3/tools"
+	"github.com/go-stomp/stomp"
 	"github.com/golang/protobuf/proto"
-	"gopkg.in/stomp.v2"
 
-	"github.com/contester/printing3/printserver"
+	log "github.com/sirupsen/logrus"
+
 	_ "github.com/paulrosania/go-charset/data"
 )
 
@@ -104,7 +104,7 @@ func (s *server) processIncoming(conn *printserver.ServerConn, msg *stomp.Messag
 	}
 
 	jobId := "s-" + strconv.FormatUint(uint64(job.GetJobId()), 10)
-	job.Team.Name = proto.String(texEscape(job.Team.GetName()))
+	job.Team.Name = texEscape(job.Team.GetName())
 
 	jobDir := filepath.Join(s.Workdir, jobId)
 	os.MkdirAll(jobDir, os.ModePerm) // err?
@@ -168,7 +168,7 @@ func (s *server) processIncoming(conn *printserver.ServerConn, msg *stomp.Messag
 		return err
 	}
 
-	job.Filename = proto.String(texEscape(job.GetFilename()))
+	job.Filename = texEscape(job.GetFilename())
 	data := templateData{
 		PrintJob: &job,
 	}
@@ -204,7 +204,7 @@ func (s *server) processIncoming(conn *printserver.ServerConn, msg *stomp.Messag
 	}
 
 	result := tickets.BinaryJob{
-		JobId:   &jobId,
+		JobId:   jobId,
 		Printer: job.Printer,
 		Data:    cBlob,
 	}
