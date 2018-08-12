@@ -2,22 +2,22 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"flag"
-	"fmt"
-	"log"
 	"strconv"
 	"time"
 
-	"github.com/contester/printing3/tickets"
-	"github.com/contester/printing3/tools"
-	"github.com/golang/protobuf/proto"
-
-	"encoding/json"
 	"github.com/contester/printing3/grabber"
 	"github.com/contester/printing3/printserver"
-	_ "github.com/go-sql-driver/mysql"
+	"github.com/contester/printing3/tickets"
+	"github.com/contester/printing3/tools"
+	"github.com/go-stomp/stomp"
+	"github.com/golang/protobuf/proto"
 	"github.com/jmoiron/sqlx"
-	"gopkg.in/stomp.v2"
+
+	log "github.com/sirupsen/logrus"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 const PRINT_QUERY = `select
@@ -67,19 +67,19 @@ func processJob(db *sqlx.DB, sender func(msg proto.Message) error, rows grabber.
 	}
 
 	result := tickets.PrintJob{
-		JobId:     proto.Uint32(uint32(job.JobID)),
-		Filename:  &job.Filename,
-		Printer:   &job.Printer,
-		Computer:  &tickets.Computer{Id: &job.ComputerID, Name: &job.ComputerName},
-		Contest:   &tickets.IdName{Id: proto.Uint32(uint32(job.ContestID)), Name: &job.ContestName},
-		Area:      &tickets.IdName{Id: proto.Uint32(uint32(job.AreaID)), Name: &job.AreaName},
-		Charset:   proto.String("windows-1251"),
-		Team:      &tickets.IdName{Id: proto.Uint32(uint32(job.TeamID)), Name: &job.SchoolName},
-		Timestamp: proto.Uint64(uint64(job.Arrived.UnixNano()) / 1000),
+		JobId:     uint32(job.JobID),
+		Filename:  job.Filename,
+		Printer:   job.Printer,
+		Computer:  &tickets.Computer{Id: job.ComputerID, Name: job.ComputerName},
+		Contest:   &tickets.IdName{Id: uint32(job.ContestID), Name: job.ContestName},
+		Area:      &tickets.IdName{Id: uint32(job.AreaID), Name: job.AreaName},
+		Charset:   "windows-1251",
+		Team:      &tickets.IdName{Id: uint32(job.TeamID), Name: job.SchoolName},
+		Timestamp: uint64(job.Arrived.UnixNano()) / 1000,
 	}
 
 	if job.TeamNum.Valid && job.TeamNum.Int64 > 0 {
-		result.Team.Name = proto.String(result.Team.GetName() + " #" + strconv.FormatInt(job.TeamNum.Int64, 10))
+		result.Team.Name = result.GetTeam().GetName() + " #" + strconv.FormatInt(job.TeamNum.Int64, 10)
 	}
 
 	result.Data, err = tickets.NewBlob(job.Data)
@@ -94,7 +94,7 @@ func processJob(db *sqlx.DB, sender func(msg proto.Message) error, rows grabber.
 	if _, err = db.Exec("Update PrintJobs set Printed = 255 where ID = ?", job.JobID); err != nil {
 		return err
 	}
-	fmt.Printf("Printed job %d\n", job.JobID)
+	log.Infof("Printed job %d", job.JobID)
 	return nil
 }
 

@@ -1,14 +1,14 @@
 package grabber
 
 import (
-	"log"
 	"time"
 
 	"github.com/contester/printing3/tools"
 	"github.com/go-stomp/stomp"
-	"github.com/go-stomp/stomp/frame"
 	"github.com/golang/protobuf/proto"
 	"github.com/jmoiron/sqlx"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type Grabber struct {
@@ -77,7 +77,7 @@ func (s *Grabber) Send(msg proto.Message) error {
 
 		if err = s.Conn.Send(s.Destination, "application/octet-stream", body,
 			stomp.SendOpt.Receipt,
-			stomp.SendOpt.Header(frame.NewHeader("delivery-mode", "2"))); err == nil {
+			stomp.SendOpt.Header("delivery-mode", "2")); err == nil {
 			break
 		}
 		s.Conn.Disconnect()
