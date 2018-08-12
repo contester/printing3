@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 	"text/template"
@@ -13,8 +12,10 @@ import (
 	"github.com/contester/printing3/printserver"
 	"github.com/contester/printing3/tickets"
 	"github.com/contester/printing3/tools"
+	"github.com/go-stomp/stomp"
 	"github.com/golang/protobuf/proto"
-	"gopkg.in/stomp.v2"
+
+	log "github.com/sirupsen/logrus"
 
 	_ "github.com/paulrosania/go-charset/data"
 )
@@ -92,7 +93,7 @@ func (s *submitLine) getVerdict() string {
 		return "Compilation error"
 	}
 	if s.Acm != nil {
-		if s.GetAcm().TestId != nil {
+		if s.GetAcm().GetTestId() != 0 {
 			return fmt.Sprintf("%s on test %d", s.GetAcm().GetResult(), s.GetAcm().GetTestId())
 		}
 		return s.GetAcm().GetResult()
@@ -135,18 +136,18 @@ func (s *templateData) GetSubmits() []*submitLine {
 func processIncoming(conn *printserver.ServerConn, msg *stomp.Message) error {
 	var job tickets.Ticket
 	if err := proto.Unmarshal(msg.Body, &job); err != nil {
-		log.Printf("Received malformed job: %s", err)
+		log.Errorf("Received malformed job: %v", err)
 		return err
 	}
 
 	jobId := "t-" + strconv.FormatUint(uint64(job.GetSubmitId()), 10)
-	job.Team.Name = proto.String(strings.Replace(job.Team.GetName(), "#", "\\#", -1))
+	job.Team.Name = strings.Replace(job.Team.GetName(), "#", "\\#", -1)
 
 	var buf bytes.Buffer
 	if err := documentTemplate.Execute(&buf, &templateData{
 		Ticket: &job,
 	}); err != nil {
-		log.Println(err)
+		log.Errorf("execut template: %v", err)
 		return err
 	}
 
@@ -156,7 +157,7 @@ func processIncoming(conn *printserver.ServerConn, msg *stomp.Message) error {
 	}
 
 	result := tickets.BinaryJob{
-		JobId:   &jobId,
+		JobId:   jobId,
 		Printer: job.Printer,
 		Data:    cBlob,
 	}
@@ -175,11 +176,8 @@ func main() {
 	pserver := printserver.Server{
 		Source:      "/amq/queue/ticket_pb",
 		Destination: "/amq/queue/tex_processor",
+		StompConfig: &config.Messaging,
 	}
-
-	pserver.StompConfig = &config.Messaging
-
-	log.Println(pserver)
 
 	for {
 		log.Println(pserver.Process(processIncoming))
