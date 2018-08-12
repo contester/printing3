@@ -1,12 +1,11 @@
 package printserver
 
 import (
-	"log"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/contester/printing3/tools"
+	"github.com/go-stomp/stomp"
 	"github.com/golang/protobuf/proto"
-	"gopkg.in/stomp.v2"
-	"gopkg.in/stomp.v2/frame"
 )
 
 type Server struct {
@@ -20,7 +19,7 @@ type ServerConn struct {
 }
 
 func (s *ServerConn) Send(msg proto.Message) error {
-	log.Printf("send: %s", msg)
+	log.Debugf("send: %s", msg)
 	contents, err := proto.Marshal(msg)
 	if err != nil {
 		return err
@@ -37,7 +36,7 @@ func (s *ServerConn) SendContents(contents []byte, contentType string) error {
 	}
 
 	return s.conn.Send(s.server.Destination, contentType, contents,
-		stomp.SendOpt.Header(frame.NewHeader("delivery-mode", "2")))
+		stomp.SendOpt.Header("delivery-mode", "2"))
 }
 
 func (s *Server) Process(process func(*ServerConn, *stomp.Message) error) error {
@@ -60,22 +59,22 @@ func (s *Server) Process(process func(*ServerConn, *stomp.Message) error) error 
 		}
 		if s.Destination != "" {
 			tx := conn.Begin()
-			log.Printf("Started transaction: %+v\n", tx)
+			log.Debugf("Started transaction: %+v", tx)
 			err = process(&ServerConn{server: s, conn: tx}, msg)
 			if err != nil {
-				log.Printf("Processing error %s, aborting\n", err)
+				log.Errorf("Processing error %v, aborting", err)
 				tx.Abort()
 			} else {
-				log.Printf("Acking\n")
+				log.Debugf("Acking")
 				if err = tx.Ack(msg); err != nil {
-					log.Printf("Ack error: %s\n", err)
+					log.Errorf("Ack error: %v", err)
 					conn.Disconnect()
 					return err
 				}
-				log.Printf("Committing\n")
+				log.Debugf("Committing")
 				err = tx.Commit()
 			}
-			log.Printf("Finished.\n")
+			log.Debugf("Finished.")
 		} else {
 			err = process(&ServerConn{server: s, conn: conn}, msg)
 			if err != nil {
@@ -88,6 +87,4 @@ func (s *Server) Process(process func(*ServerConn, *stomp.Message) error) error 
 			return err
 		}
 	}
-	return nil
-
 }

@@ -1,3 +1,5 @@
+syntax = "proto3";
+
 package tickets;
 
 message Blob {
@@ -7,77 +9,77 @@ message Blob {
             METHOD_ZLIB = 1;
         }
 
-        optional CompressionType method = 1;
-        optional uint32 original_size = 2;
+        CompressionType method = 1;
+        uint32 original_size = 2;
     }
 
-    optional bytes data = 1;
-    optional CompressionInfo compression = 2;
-    optional bytes sha1 = 3;
+    bytes data = 1;
+    CompressionInfo compression = 2;
+    bytes sha1 = 3;
 };
 
 message PrintJob {
-    optional string filename = 1;
-    optional IdName contest = 2;
-    optional IdName team = 3;
-    optional Computer computer = 4;
-    optional IdName area = 5;
-    optional Blob data = 6;
-    optional uint64 timestamp = 7;
-    optional string printer = 8;
-    optional uint32 job_id = 9;
-    optional string charset = 10;
+    string filename = 1;
+    IdName contest = 2;
+    IdName team = 3;
+    Computer computer = 4;
+    IdName area = 5;
+    Blob data = 6;
+    uint64 timestamp = 7;
+    string printer = 8;
+    uint32 job_id = 9;
+    string charset = 10;
 };
 
 message BinaryJob {
-    optional string printer = 1;
-    optional Blob data = 2;
-    optional string job_id = 3;
+    string printer = 1;
+    Blob data = 2;
+    string job_id = 3;
 };
 
 message IdName {
-    optional uint32 id = 1;
-    optional string name = 2;
+    uint32 id = 1;
+    string name = 2;
 };
 
 message Computer {
-    optional string id = 1;
-    optional string name = 2;
+    string id = 1;
+    string name = 2;
 };
 
 message Ticket {
     message Submit {
         message School {
-            optional uint32 tests_taken = 1;
-            optional uint32 tests_passed = 2;
+            uint32 tests_taken = 1;
+            uint32 tests_passed = 2;
         }
 
         message ACM {
-            optional string result = 1; // replace with uint32 and map
-            optional uint32 test_id = 2;
+            string result = 1; // replace with uint32 and map
+            uint32 test_id = 2;
         }
 
-        optional uint32 submit_number = 1;
-        optional uint64 arrived = 2;
-        optional bool compiled = 3;
-        optional School school = 4;
-        optional ACM acm = 5;
+        uint32 submit_number = 1;
+        uint64 arrived = 2;
+        bool compiled = 3;
+        School school = 4;
+        ACM acm = 5;
     }
 
     message Problem {
-        optional string id = 1;
-        optional string name = 2;
+        string id = 1;
+        string name = 2;
     }
 
-    optional IdName contest = 1;
-    optional IdName team = 2;
-    optional IdName area = 3;
-    optional Computer computer = 4;
-    optional Problem problem = 5;
+    IdName contest = 1;
+    IdName team = 2;
+    IdName area = 3;
+    Computer computer = 4;
+    Problem problem = 5;
 
-    optional uint32 submit_id = 6;
-    optional uint64 judge_time = 7;
+    uint32 submit_id = 6;
+    uint64 judge_time = 7;
 
     repeated Submit submit = 8;
-    optional string printer = 9; // string now, replace with id
+    string printer = 9; // string now, replace with id
 };

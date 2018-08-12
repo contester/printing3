@@ -1,13 +1,14 @@
 package grabber
 
 import (
-	"github.com/contester/printing3/tools"
-	"github.com/golang/protobuf/proto"
-	"github.com/jmoiron/sqlx"
-	"gopkg.in/stomp.v2"
-	"gopkg.in/stomp.v2/frame"
 	"log"
 	"time"
+
+	"github.com/contester/printing3/tools"
+	"github.com/go-stomp/stomp"
+	"github.com/go-stomp/stomp/frame"
+	"github.com/golang/protobuf/proto"
+	"github.com/jmoiron/sqlx"
 )
 
 type Grabber struct {

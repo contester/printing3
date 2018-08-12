@@ -2,21 +2,21 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"flag"
-	"fmt"
-	"log"
 	"strconv"
 	"time"
 
+	"github.com/contester/printing3/printserver"
 	"github.com/contester/printing3/tickets"
 	"github.com/contester/printing3/tools"
+	"github.com/go-stomp/stomp"
 	"github.com/golang/protobuf/proto"
 	"github.com/jmoiron/sqlx"
 
-	"encoding/json"
-	"github.com/contester/printing3/printserver"
+	log "github.com/sirupsen/logrus"
+
 	_ "github.com/go-sql-driver/mysql"
-	"gopkg.in/stomp.v2"
 )
 
 func createSelectSubmitQuery(extraWhere string) string {
@@ -81,23 +81,23 @@ type hasScanx interface {
 	StructScan(interface{}) error
 }
 
-func scanSubmit(r hasScanx) (result *scannedSubmit, err error) {
-	log.Printf("scanning r\n")
+func scanSubmit(r hasScanx) (*scannedSubmit, error) {
+	log.Debugf("Scanning...")
 	var sub scannedSubmit
-	if err = r.StructScan(&sub); err == nil {
-		result = &sub
+	if err := r.StructScan(&sub); err != nil {
+		return nil, err
 	}
-	return
+	return &sub, nil
 }
 
 func findRelatedSubmits(db *sqlx.DB, sub *scannedSubmit) ([]*scannedSubmit, error) {
 	rows, err := db.Queryx(relatedSubmitsQuery, sub.Contest, sub.Task, sub.Team, sub.ID)
 	if err != nil {
-		log.Printf("Error scanning for related submits: %s", err)
+		log.Errorf("Scanning for related submits: %v", err)
 		return nil, err
 	}
 
-	result := make([]*scannedSubmit, 0)
+	var result []*scannedSubmit
 
 	for rows.Next() {
 		if s, err := scanSubmit(rows); err == nil {
@@ -109,16 +109,19 @@ func findRelatedSubmits(db *sqlx.DB, sub *scannedSubmit) ([]*scannedSubmit, erro
 }
 
 func createSubmit(db *sqlx.DB, sub *scannedSubmit, submitNo int) *tickets.Ticket_Submit {
-	var result tickets.Ticket_Submit
-	result.SubmitNumber = proto.Uint32(uint32(submitNo))
-	if sub.Arrived > 0 {
-		result.Arrived = proto.Uint64(uint64(sub.Arrived))
+	result := tickets.Ticket_Submit{
+		SubmitNumber: uint32(submitNo),
+		Arrived:      uint64(sub.Arrived),
+		Compiled:     sub.Compiled == 1,
 	}
-	if result.Compiled = proto.Bool(sub.Compiled == 1); !result.GetCompiled() {
+	if !result.Compiled {
 		return &result
 	}
 	if sub.SchoolMode != 0 {
-		result.School = &tickets.Ticket_Submit_School{TestsTaken: proto.Uint32(uint32(sub.Taken)), TestsPassed: proto.Uint32(uint32(sub.Passed))}
+		result.School = &tickets.Ticket_Submit_School{
+			TestsTaken:  uint32(sub.Taken),
+			TestsPassed: uint32(sub.Passed),
+		}
 	} else {
 		var description string
 		var test int64
@@ -128,13 +131,13 @@ func createSubmit(db *sqlx.DB, sub *scannedSubmit, submitNo int) *tickets.Ticket
 		switch {
 		case err == sql.ErrNoRows:
 			if sub.Passed != 0 && sub.Passed == sub.Taken {
-				result.Acm = &tickets.Ticket_Submit_ACM{Result: proto.String("ACCEPTED")}
+				result.Acm = &tickets.Ticket_Submit_ACM{Result: "ACCEPTED"}
 			}
 		case err != nil:
-			log.Fatal(err)
+			log.Fatalf("reading last test failure: %v", err)
 			return nil
 		default:
-			result.Acm = &tickets.Ticket_Submit_ACM{Result: &description, TestId: proto.Uint32(uint32(test))}
+			result.Acm = &tickets.Ticket_Submit_ACM{Result: description, TestId: uint32(test)}
 		}
 	}
 	return &result
@@ -143,32 +146,32 @@ func createSubmit(db *sqlx.DB, sub *scannedSubmit, submitNo int) *tickets.Ticket
 func processSubmit(db *sqlx.DB, sender func(msg proto.Message) error, rows hasScanx) error {
 	sub, err := scanSubmit(rows)
 	if err != nil {
-		fmt.Printf("scan error: %s", err)
+		log.Errorf("scan error: %v", err)
 		return err
 	}
-	log.Printf("processSubmit: %s\n", sub)
+	log.Debugf("processSubmit: %s", sub)
 	related, err := findRelatedSubmits(db, sub)
 	if err != nil {
 		return err
 	}
 
 	result := tickets.Ticket{
-		SubmitId: proto.Uint32(uint32(sub.ID)),
-		Printer:  &sub.Printer,
-		Computer: &tickets.Computer{Id: &sub.ComputerID, Name: &sub.ComputerName},
-		Area:     &tickets.IdName{Id: proto.Uint32(uint32(sub.AreaID)), Name: &sub.AreaName},
-		Contest:  &tickets.IdName{Id: proto.Uint32(uint32(sub.Contest)), Name: &sub.ContestName},
-		Problem:  &tickets.Ticket_Problem{Id: &sub.Task, Name: &sub.ProblemName},
+		SubmitId:  uint32(sub.ID),
+		Printer:   sub.Printer,
+		Computer:  &tickets.Computer{Id: sub.ComputerID, Name: sub.ComputerName},
+		Area:      &tickets.IdName{Id: uint32(sub.AreaID), Name: sub.AreaName},
+		Contest:   &tickets.IdName{Id: uint32(sub.Contest), Name: sub.ContestName},
+		Problem:   &tickets.Ticket_Problem{Id: sub.Task, Name: sub.ProblemName},
+		JudgeTime: uint64(sub.Touched.UnixNano() / 1000),
+		Submit:    make([]*tickets.Ticket_Submit, 0, len(related)),
 	}
 
 	teamName := sub.SchoolName
 	if sub.TeamNum.Valid && sub.TeamNum.Int64 > 0 {
 		teamName = teamName + " #" + strconv.FormatInt(sub.TeamNum.Int64, 10)
 	}
-	result.Team = &tickets.IdName{Id: proto.Uint32(uint32(sub.Team)), Name: &teamName}
-	result.JudgeTime = proto.Uint64(uint64(sub.Touched.UnixNano() / 1000))
+	result.Team = &tickets.IdName{Id: uint32(sub.Team), Name: teamName}
 
-	result.Submit = make([]*tickets.Ticket_Submit, 0)
 	result.Submit = append(result.Submit, createSubmit(db, sub, len(related)+1))
 	for count := len(related); count > 0; {
 		count -= 1
@@ -181,7 +184,7 @@ func processSubmit(db *sqlx.DB, sender func(msg proto.Message) error, rows hasSc
 	if _, err = db.Exec("Update Submits set Printed = Touched where ID = ?", sub.ID); err != nil {
 		return err
 	}
-	fmt.Printf("Printed submit %d\n", sub.ID)
+	log.Infof("Printed submit %d", sub.ID)
 	return nil
 }
 

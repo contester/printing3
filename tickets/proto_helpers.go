@@ -3,7 +3,6 @@ package tickets
 
 import (
 	"bytes"
-	"github.com/golang/protobuf/proto"
 	"compress/zlib"
 	"crypto/sha1"
 	"io"
@@ -14,7 +13,7 @@ import (
 var blobCounter int32
 
 func (blob *Blob) Reader() (io.Reader, error) {
-	if blob.Compression != nil && blob.Compression.GetMethod() == Blob_CompressionInfo_METHOD_ZLIB {
+	if blob.GetCompression().GetMethod() == METHOD_ZLIB {
 		buf := bytes.NewBuffer(blob.Data)
 		r, err := zlib.NewReader(buf)
 		if err != nil {
@@ -78,10 +77,9 @@ func NewBlob(data []byte) (*Blob, error) {
 	}
 	AddBlob(result)
 	if len(compressed) < len(data)-8 {
-		method := Blob_CompressionInfo_METHOD_ZLIB
 		result.Compression = &Blob_CompressionInfo{
-			Method:       &method,
-			OriginalSize: proto.Uint32(uint32(len(data))),
+			Method:       METHOD_ZLIB,
+			OriginalSize: uint32(len(data)),
 		}
 		result.Data = compressed
 	} else {
@@ -101,13 +99,12 @@ func BlobFromStream(r io.Reader) (*Blob, error) {
 		return nil, err
 	}
 	compressor.Close()
-	method := Blob_CompressionInfo_METHOD_ZLIB
 	result := &Blob{
 		Sha1: shaCalculator.Sum(nil),
 		Data: compressed.Bytes(),
 		Compression: &Blob_CompressionInfo{
-			Method:       &method,
-			OriginalSize: proto.Uint32(uint32(size)),
+			Method:       METHOD_ZLIB,
+			OriginalSize: uint32(size),
 		},
 	}
 	AddBlob(result)
