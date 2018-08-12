@@ -3,17 +3,19 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/contester/printing3/printserver"
-	"github.com/contester/printing3/tickets"
-	"github.com/contester/printing3/tools"
-	"github.com/golang/protobuf/proto"
-	"gopkg.in/stomp.v2"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"time"
+
+	"github.com/contester/printing3/printserver"
+	"github.com/contester/printing3/tickets"
+	"github.com/contester/printing3/tools"
+	"github.com/go-stomp/stomp"
+	"github.com/golang/protobuf/proto"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type server struct {
@@ -99,12 +101,12 @@ func main() {
 	pserver := printserver.Server{
 		Source:      "/amq/queue/tex_processor",
 		Destination: "/amq/queue/printer",
+		StompConfig: &config.Messaging,
 	}
 
-	pserver.StompConfig = &config.Messaging
-
-	var sserver server
-	sserver.Workdir = config.Workdirs.TexProcessor
+	sserver := server{
+		Workdir: config.Workdirs.TexProcessor,
+	}
 
 	os.MkdirAll(sserver.Workdir, os.ModePerm)
 
