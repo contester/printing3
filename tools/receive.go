@@ -1,12 +1,12 @@
 package tools
 
 import (
-	"gopkg.in/stomp.v2"
-	"gopkg.in/stomp.v2/frame"
+	"github.com/go-stomp/stomp"
+	"github.com/go-stomp/stomp/frame"
 )
 
 type Conn interface {
-	Send(destination, contentType string, body []byte, opts ...func(*frame.Frame)error) error
+	Send(destination, contentType string, body []byte, opts ...func(*frame.Frame) error) error
 }
 
 func (pc *StompConfig) ReceiveLoop(queueName string, useTransactions bool, process func(Conn, *stomp.Message) error) error {
@@ -48,5 +48,4 @@ func (pc *StompConfig) ReceiveLoop(queueName string, useTransactions bool, proce
 			return err
 		}
 	}
-	return nil
 }

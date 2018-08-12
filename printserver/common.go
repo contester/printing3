@@ -20,16 +20,23 @@ type ServerConn struct {
 }
 
 func (s *ServerConn) Send(msg proto.Message) error {
-	if s.server.Destination == "" {
-		return nil
-	}
 	log.Printf("send: %s", msg)
 	contents, err := proto.Marshal(msg)
 	if err != nil {
 		return err
 	}
+	return s.SendContents(contents, "")
+}
 
-	return s.conn.Send(s.server.Destination, "application/octet-stream", contents,
+func (s *ServerConn) SendContents(contents []byte, contentType string) error {
+	if s.server.Destination == "" {
+		return nil
+	}
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+
+	return s.conn.Send(s.server.Destination, contentType, contents,
 		stomp.SendOpt.Header(frame.NewHeader("delivery-mode", "2")))
 }
 

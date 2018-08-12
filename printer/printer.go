@@ -14,7 +14,7 @@ import (
 	"github.com/contester/printing3/printserver"
 	"github.com/contester/printing3/tickets"
 	"github.com/contester/printing3/tools"
-	"gopkg.in/stomp.v1"
+	"gopkg.in/stomp.v2"
 )
 
 type server struct {
@@ -65,11 +65,8 @@ func main() {
 
 	pserver := printserver.Server{
 		Source: "/amq/queue/printer",
-	}
-
-	pserver.StompConfig, err = tools.ParseStompFlagOrConfig("", config, "messaging")
-	if err != nil {
-		log.Fatal(err)
+		Destination: "/amq/queue/finished_printing",
+		StompConfig: &config.Messaging,
 	}
 
 	var srv server
