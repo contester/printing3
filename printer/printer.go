@@ -36,7 +36,7 @@ func (s *server) processIncoming(conn *printserver.ServerConn, msg *stomp.Messag
 			return err
 		}
 	} else {
-		log.Printf("Error getting buffer: %s", err)
+		log.Errorf("Error getting buffer: %s", err)
 		return err
 	}
 
