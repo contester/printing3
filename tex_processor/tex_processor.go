@@ -46,16 +46,17 @@ func (s *server) processIncoming(conn *printserver.ServerConn, msg *stomp.Messag
 	cmd.Dir, cmd.Stdin, cmd.Stdout, cmd.Stderr = jobDir, os.Stdin, os.Stdout, os.Stderr
 	if err = cmd.Run(); err != nil {
 		log.Printf("Latex error: %s\n", err)
-		return nil
+		//return nil
 	}
 
 	cmd = exec.Command("latex", "-interaction=batchmode", sourceName)
 	cmd.Dir, cmd.Stdin, cmd.Stdout, cmd.Stderr = jobDir, os.Stdin, os.Stdout, os.Stderr
 	if err = cmd.Run(); err != nil {
 		log.Printf("Latex error: %s\n", err)
-		return nil
+		// return nil
 	}
 
+	log.Printf(">>>>> dvips")
 	dviName := fmt.Sprintf("%s.dvi", job.GetJobId())
 	cmd = exec.Command("dvips", "-t", "a4", dviName)
 	cmd.Dir, cmd.Stdin, cmd.Stdout, cmd.Stderr = jobDir, os.Stdin, os.Stdout, os.Stderr

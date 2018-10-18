@@ -31,7 +31,7 @@ type server struct {
 }
 
 const DOCUMENT_TEMPLATE = `\documentclass[12pt,a4paper,oneside]{article}
-\usepackage[utf8]{inputenc}
+\usepackage[cp1251]{inputenc}
 \usepackage[english,russian]{babel}
 \usepackage{fancyhdr}
 \usepackage{fancyvrb}
@@ -158,9 +158,11 @@ func (s *server) processIncoming(conn *printserver.ServerConn, msg *stomp.Messag
 		return err
 	}
 
+	log.Infof("%v", args)
 	cmd = exec.Command("pygmentize", "-f", "latex", "-S", "bw")
 	out, err := cmd.Output()
 	if err != nil {
+		log.Errorf("%v: %s", err, out)
 		return err
 	}
 

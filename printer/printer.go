@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"io/ioutil"
 	"os"
@@ -19,6 +20,12 @@ import (
 
 type server struct {
 	Workdir, Gsprint string
+}
+
+func (s *server) justPrint(printerName, sourceFullName string) error {
+	cmd := exec.Command(s.Gsprint, "-printer", printerName, sourceFullName)
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
+	return cmd.Run()
 }
 
 func (s *server) processIncoming(conn *printserver.ServerConn, msg *stomp.Message) error {
@@ -41,18 +48,26 @@ func (s *server) processIncoming(conn *printserver.ServerConn, msg *stomp.Messag
 	}
 
 	log.Infof("Sending job %s to printer %s", job.GetJobId(), job.GetPrinter())
+	var err error
 	if tools.DryRun() {
 		log.Infof("Would run: %q %s %q %q", s.Gsprint, "-printer", job.GetPrinter(), sourceFullName)
-		return nil
+	} else {
+		err = s.justPrint(job.GetPrinter(), sourceFullName)
 	}
-	cmd := exec.Command(s.Gsprint, "-printer", job.GetPrinter(), sourceFullName)
-	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
-	if err := cmd.Run(); err != nil {
+	if err != nil {
 		log.Errorf("Error printing: %s", err)
 		return err
 	}
 
-	return nil
+	type printDone struct {
+		ID string `json:"id"`
+	}
+
+	outbuf, err := json.Marshal(printDone{ID: job.GetJobId()})
+	if err != nil {
+		return nil
+	}
+	return conn.SendContents(outbuf, "application/json")
 }
 
 func main() {
