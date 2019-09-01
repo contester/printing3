@@ -3,16 +3,9 @@
 
 package tickets
 
-import proto "github.com/gogo/protobuf/proto"
+import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
-
-import strconv "strconv"
-
-import bytes "bytes"
-
-import strings "strings"
-import reflect "reflect"
 
 import io "io"
 
@@ -25,161 +18,29 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
-
-type Blob_CompressionInfo_CompressionType int32
-
-const (
-	METHOD_NONE Blob_CompressionInfo_CompressionType = 0
-	METHOD_ZLIB Blob_CompressionInfo_CompressionType = 1
-)
-
-var Blob_CompressionInfo_CompressionType_name = map[int32]string{
-	0: "METHOD_NONE",
-	1: "METHOD_ZLIB",
-}
-var Blob_CompressionInfo_CompressionType_value = map[string]int32{
-	"METHOD_NONE": 0,
-	"METHOD_ZLIB": 1,
-}
-
-func (Blob_CompressionInfo_CompressionType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_tickets_e960824f3b1e86b7, []int{0, 0, 0}
-}
-
-type Blob struct {
-	Data                 []byte                `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
-	Compression          *Blob_CompressionInfo `protobuf:"bytes,2,opt,name=compression" json:"compression,omitempty"`
-	Sha1                 []byte                `protobuf:"bytes,3,opt,name=sha1,proto3" json:"sha1,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
-	XXX_sizecache        int32                 `json:"-"`
-}
-
-func (m *Blob) Reset()      { *m = Blob{} }
-func (*Blob) ProtoMessage() {}
-func (*Blob) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tickets_e960824f3b1e86b7, []int{0}
-}
-func (m *Blob) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *Blob) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Blob.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (dst *Blob) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Blob.Merge(dst, src)
-}
-func (m *Blob) XXX_Size() int {
-	return m.Size()
-}
-func (m *Blob) XXX_DiscardUnknown() {
-	xxx_messageInfo_Blob.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Blob proto.InternalMessageInfo
-
-func (m *Blob) GetData() []byte {
-	if m != nil {
-		return m.Data
-	}
-	return nil
-}
-
-func (m *Blob) GetCompression() *Blob_CompressionInfo {
-	if m != nil {
-		return m.Compression
-	}
-	return nil
-}
-
-func (m *Blob) GetSha1() []byte {
-	if m != nil {
-		return m.Sha1
-	}
-	return nil
-}
-
-type Blob_CompressionInfo struct {
-	Method               Blob_CompressionInfo_CompressionType `protobuf:"varint,1,opt,name=method,proto3,enum=tickets.Blob_CompressionInfo_CompressionType" json:"method,omitempty"`
-	OriginalSize         uint32                               `protobuf:"varint,2,opt,name=original_size,json=originalSize,proto3" json:"original_size,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}                             `json:"-"`
-	XXX_sizecache        int32                                `json:"-"`
-}
-
-func (m *Blob_CompressionInfo) Reset()      { *m = Blob_CompressionInfo{} }
-func (*Blob_CompressionInfo) ProtoMessage() {}
-func (*Blob_CompressionInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tickets_e960824f3b1e86b7, []int{0, 0}
-}
-func (m *Blob_CompressionInfo) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *Blob_CompressionInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Blob_CompressionInfo.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (dst *Blob_CompressionInfo) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Blob_CompressionInfo.Merge(dst, src)
-}
-func (m *Blob_CompressionInfo) XXX_Size() int {
-	return m.Size()
-}
-func (m *Blob_CompressionInfo) XXX_DiscardUnknown() {
-	xxx_messageInfo_Blob_CompressionInfo.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Blob_CompressionInfo proto.InternalMessageInfo
-
-func (m *Blob_CompressionInfo) GetMethod() Blob_CompressionInfo_CompressionType {
-	if m != nil {
-		return m.Method
-	}
-	return METHOD_NONE
-}
-
-func (m *Blob_CompressionInfo) GetOriginalSize() uint32 {
-	if m != nil {
-		return m.OriginalSize
-	}
-	return 0
-}
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type PrintJob struct {
 	Filename             string    `protobuf:"bytes,1,opt,name=filename,proto3" json:"filename,omitempty"`
-	Contest              *IdName   `protobuf:"bytes,2,opt,name=contest" json:"contest,omitempty"`
-	Team                 *IdName   `protobuf:"bytes,3,opt,name=team" json:"team,omitempty"`
-	Computer             *Computer `protobuf:"bytes,4,opt,name=computer" json:"computer,omitempty"`
-	Area                 *IdName   `protobuf:"bytes,5,opt,name=area" json:"area,omitempty"`
-	Data                 *Blob     `protobuf:"bytes,6,opt,name=data" json:"data,omitempty"`
+	Contest              *IdName   `protobuf:"bytes,2,opt,name=contest,proto3" json:"contest,omitempty"`
+	Team                 *IdName   `protobuf:"bytes,3,opt,name=team,proto3" json:"team,omitempty"`
+	Computer             *Computer `protobuf:"bytes,4,opt,name=computer,proto3" json:"computer,omitempty"`
+	Area                 *IdName   `protobuf:"bytes,5,opt,name=area,proto3" json:"area,omitempty"`
+	Data                 []byte    `protobuf:"bytes,6,opt,name=data,proto3" json:"data,omitempty"`
 	Timestamp            uint64    `protobuf:"varint,7,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	Printer              string    `protobuf:"bytes,8,opt,name=printer,proto3" json:"printer,omitempty"`
 	JobId                uint32    `protobuf:"varint,9,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
 	Charset              string    `protobuf:"bytes,10,opt,name=charset,proto3" json:"charset,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
+	XXX_unrecognized     []byte    `json:"-"`
 	XXX_sizecache        int32     `json:"-"`
 }
 
-func (m *PrintJob) Reset()      { *m = PrintJob{} }
-func (*PrintJob) ProtoMessage() {}
+func (m *PrintJob) Reset()         { *m = PrintJob{} }
+func (m *PrintJob) String() string { return proto.CompactTextString(m) }
+func (*PrintJob) ProtoMessage()    {}
 func (*PrintJob) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tickets_e960824f3b1e86b7, []int{1}
+	return fileDescriptor_tickets_cf0ffa94fc4e9142, []int{0}
 }
 func (m *PrintJob) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -243,7 +104,7 @@ func (m *PrintJob) GetArea() *IdName {
 	return nil
 }
 
-func (m *PrintJob) GetData() *Blob {
+func (m *PrintJob) GetData() []byte {
 	if m != nil {
 		return m.Data
 	}
@@ -280,16 +141,18 @@ func (m *PrintJob) GetCharset() string {
 
 type BinaryJob struct {
 	Printer              string   `protobuf:"bytes,1,opt,name=printer,proto3" json:"printer,omitempty"`
-	Data                 *Blob    `protobuf:"bytes,2,opt,name=data" json:"data,omitempty"`
+	Data                 []byte   `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
 	JobId                string   `protobuf:"bytes,3,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *BinaryJob) Reset()      { *m = BinaryJob{} }
-func (*BinaryJob) ProtoMessage() {}
+func (m *BinaryJob) Reset()         { *m = BinaryJob{} }
+func (m *BinaryJob) String() string { return proto.CompactTextString(m) }
+func (*BinaryJob) ProtoMessage()    {}
 func (*BinaryJob) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tickets_e960824f3b1e86b7, []int{2}
+	return fileDescriptor_tickets_cf0ffa94fc4e9142, []int{1}
 }
 func (m *BinaryJob) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -325,7 +188,7 @@ func (m *BinaryJob) GetPrinter() string {
 	return ""
 }
 
-func (m *BinaryJob) GetData() *Blob {
+func (m *BinaryJob) GetData() []byte {
 	if m != nil {
 		return m.Data
 	}
@@ -343,13 +206,15 @@ type IdName struct {
 	Id                   uint32   `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name                 string   `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *IdName) Reset()      { *m = IdName{} }
-func (*IdName) ProtoMessage() {}
+func (m *IdName) Reset()         { *m = IdName{} }
+func (m *IdName) String() string { return proto.CompactTextString(m) }
+func (*IdName) ProtoMessage()    {}
 func (*IdName) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tickets_e960824f3b1e86b7, []int{3}
+	return fileDescriptor_tickets_cf0ffa94fc4e9142, []int{2}
 }
 func (m *IdName) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -396,13 +261,15 @@ type Computer struct {
 	Id                   string   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name                 string   `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Computer) Reset()      { *m = Computer{} }
-func (*Computer) ProtoMessage() {}
+func (m *Computer) Reset()         { *m = Computer{} }
+func (m *Computer) String() string { return proto.CompactTextString(m) }
+func (*Computer) ProtoMessage()    {}
 func (*Computer) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tickets_e960824f3b1e86b7, []int{4}
+	return fileDescriptor_tickets_cf0ffa94fc4e9142, []int{3}
 }
 func (m *Computer) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -446,23 +313,25 @@ func (m *Computer) GetName() string {
 }
 
 type Ticket struct {
-	Contest              *IdName          `protobuf:"bytes,1,opt,name=contest" json:"contest,omitempty"`
-	Team                 *IdName          `protobuf:"bytes,2,opt,name=team" json:"team,omitempty"`
-	Area                 *IdName          `protobuf:"bytes,3,opt,name=area" json:"area,omitempty"`
-	Computer             *Computer        `protobuf:"bytes,4,opt,name=computer" json:"computer,omitempty"`
-	Problem              *Ticket_Problem  `protobuf:"bytes,5,opt,name=problem" json:"problem,omitempty"`
+	Contest              *IdName          `protobuf:"bytes,1,opt,name=contest,proto3" json:"contest,omitempty"`
+	Team                 *IdName          `protobuf:"bytes,2,opt,name=team,proto3" json:"team,omitempty"`
+	Area                 *IdName          `protobuf:"bytes,3,opt,name=area,proto3" json:"area,omitempty"`
+	Computer             *Computer        `protobuf:"bytes,4,opt,name=computer,proto3" json:"computer,omitempty"`
+	Problem              *Ticket_Problem  `protobuf:"bytes,5,opt,name=problem,proto3" json:"problem,omitempty"`
 	SubmitId             uint32           `protobuf:"varint,6,opt,name=submit_id,json=submitId,proto3" json:"submit_id,omitempty"`
 	JudgeTime            uint64           `protobuf:"varint,7,opt,name=judge_time,json=judgeTime,proto3" json:"judge_time,omitempty"`
-	Submit               []*Ticket_Submit `protobuf:"bytes,8,rep,name=submit" json:"submit,omitempty"`
+	Submit               []*Ticket_Submit `protobuf:"bytes,8,rep,name=submit,proto3" json:"submit,omitempty"`
 	Printer              string           `protobuf:"bytes,9,opt,name=printer,proto3" json:"printer,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
+	XXX_unrecognized     []byte           `json:"-"`
 	XXX_sizecache        int32            `json:"-"`
 }
 
-func (m *Ticket) Reset()      { *m = Ticket{} }
-func (*Ticket) ProtoMessage() {}
+func (m *Ticket) Reset()         { *m = Ticket{} }
+func (m *Ticket) String() string { return proto.CompactTextString(m) }
+func (*Ticket) ProtoMessage()    {}
 func (*Ticket) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tickets_e960824f3b1e86b7, []int{5}
+	return fileDescriptor_tickets_cf0ffa94fc4e9142, []int{4}
 }
 func (m *Ticket) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -558,16 +427,18 @@ type Ticket_Submit struct {
 	SubmitNumber         uint32                `protobuf:"varint,1,opt,name=submit_number,json=submitNumber,proto3" json:"submit_number,omitempty"`
 	Arrived              uint64                `protobuf:"varint,2,opt,name=arrived,proto3" json:"arrived,omitempty"`
 	Compiled             bool                  `protobuf:"varint,3,opt,name=compiled,proto3" json:"compiled,omitempty"`
-	School               *Ticket_Submit_School `protobuf:"bytes,4,opt,name=school" json:"school,omitempty"`
-	Acm                  *Ticket_Submit_ACM    `protobuf:"bytes,5,opt,name=acm" json:"acm,omitempty"`
+	School               *Ticket_Submit_School `protobuf:"bytes,4,opt,name=school,proto3" json:"school,omitempty"`
+	Acm                  *Ticket_Submit_ACM    `protobuf:"bytes,5,opt,name=acm,proto3" json:"acm,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
+	XXX_unrecognized     []byte                `json:"-"`
 	XXX_sizecache        int32                 `json:"-"`
 }
 
-func (m *Ticket_Submit) Reset()      { *m = Ticket_Submit{} }
-func (*Ticket_Submit) ProtoMessage() {}
+func (m *Ticket_Submit) Reset()         { *m = Ticket_Submit{} }
+func (m *Ticket_Submit) String() string { return proto.CompactTextString(m) }
+func (*Ticket_Submit) ProtoMessage()    {}
 func (*Ticket_Submit) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tickets_e960824f3b1e86b7, []int{5, 0}
+	return fileDescriptor_tickets_cf0ffa94fc4e9142, []int{4, 0}
 }
 func (m *Ticket_Submit) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -635,13 +506,15 @@ type Ticket_Submit_School struct {
 	TestsTaken           uint32   `protobuf:"varint,1,opt,name=tests_taken,json=testsTaken,proto3" json:"tests_taken,omitempty"`
 	TestsPassed          uint32   `protobuf:"varint,2,opt,name=tests_passed,json=testsPassed,proto3" json:"tests_passed,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Ticket_Submit_School) Reset()      { *m = Ticket_Submit_School{} }
-func (*Ticket_Submit_School) ProtoMessage() {}
+func (m *Ticket_Submit_School) Reset()         { *m = Ticket_Submit_School{} }
+func (m *Ticket_Submit_School) String() string { return proto.CompactTextString(m) }
+func (*Ticket_Submit_School) ProtoMessage()    {}
 func (*Ticket_Submit_School) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tickets_e960824f3b1e86b7, []int{5, 0, 0}
+	return fileDescriptor_tickets_cf0ffa94fc4e9142, []int{4, 0, 0}
 }
 func (m *Ticket_Submit_School) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -688,13 +561,15 @@ type Ticket_Submit_ACM struct {
 	Result               string   `protobuf:"bytes,1,opt,name=result,proto3" json:"result,omitempty"`
 	TestId               uint32   `protobuf:"varint,2,opt,name=test_id,json=testId,proto3" json:"test_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Ticket_Submit_ACM) Reset()      { *m = Ticket_Submit_ACM{} }
-func (*Ticket_Submit_ACM) ProtoMessage() {}
+func (m *Ticket_Submit_ACM) Reset()         { *m = Ticket_Submit_ACM{} }
+func (m *Ticket_Submit_ACM) String() string { return proto.CompactTextString(m) }
+func (*Ticket_Submit_ACM) ProtoMessage()    {}
 func (*Ticket_Submit_ACM) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tickets_e960824f3b1e86b7, []int{5, 0, 1}
+	return fileDescriptor_tickets_cf0ffa94fc4e9142, []int{4, 0, 1}
 }
 func (m *Ticket_Submit_ACM) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -741,13 +616,15 @@ type Ticket_Problem struct {
 	Id                   string   `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name                 string   `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Ticket_Problem) Reset()      { *m = Ticket_Problem{} }
-func (*Ticket_Problem) ProtoMessage() {}
+func (m *Ticket_Problem) Reset()         { *m = Ticket_Problem{} }
+func (m *Ticket_Problem) String() string { return proto.CompactTextString(m) }
+func (*Ticket_Problem) ProtoMessage()    {}
 func (*Ticket_Problem) Descriptor() ([]byte, []int) {
-	return fileDescriptor_tickets_e960824f3b1e86b7, []int{5, 1}
+	return fileDescriptor_tickets_cf0ffa94fc4e9142, []int{4, 1}
 }
 func (m *Ticket_Problem) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -791,8 +668,6 @@ func (m *Ticket_Problem) GetName() string {
 }
 
 func init() {
-	proto.RegisterType((*Blob)(nil), "tickets.Blob")
-	proto.RegisterType((*Blob_CompressionInfo)(nil), "tickets.Blob.CompressionInfo")
 	proto.RegisterType((*PrintJob)(nil), "tickets.PrintJob")
 	proto.RegisterType((*BinaryJob)(nil), "tickets.BinaryJob")
 	proto.RegisterType((*IdName)(nil), "tickets.IdName")
@@ -802,624 +677,7 @@ func init() {
 	proto.RegisterType((*Ticket_Submit_School)(nil), "tickets.Ticket.Submit.School")
 	proto.RegisterType((*Ticket_Submit_ACM)(nil), "tickets.Ticket.Submit.ACM")
 	proto.RegisterType((*Ticket_Problem)(nil), "tickets.Ticket.Problem")
-	proto.RegisterEnum("tickets.Blob_CompressionInfo_CompressionType", Blob_CompressionInfo_CompressionType_name, Blob_CompressionInfo_CompressionType_value)
 }
-func (x Blob_CompressionInfo_CompressionType) String() string {
-	s, ok := Blob_CompressionInfo_CompressionType_name[int32(x)]
-	if ok {
-		return s
-	}
-	return strconv.Itoa(int(x))
-}
-func (this *Blob) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*Blob)
-	if !ok {
-		that2, ok := that.(Blob)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if !bytes.Equal(this.Data, that1.Data) {
-		return false
-	}
-	if !this.Compression.Equal(that1.Compression) {
-		return false
-	}
-	if !bytes.Equal(this.Sha1, that1.Sha1) {
-		return false
-	}
-	return true
-}
-func (this *Blob_CompressionInfo) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*Blob_CompressionInfo)
-	if !ok {
-		that2, ok := that.(Blob_CompressionInfo)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.Method != that1.Method {
-		return false
-	}
-	if this.OriginalSize != that1.OriginalSize {
-		return false
-	}
-	return true
-}
-func (this *PrintJob) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*PrintJob)
-	if !ok {
-		that2, ok := that.(PrintJob)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.Filename != that1.Filename {
-		return false
-	}
-	if !this.Contest.Equal(that1.Contest) {
-		return false
-	}
-	if !this.Team.Equal(that1.Team) {
-		return false
-	}
-	if !this.Computer.Equal(that1.Computer) {
-		return false
-	}
-	if !this.Area.Equal(that1.Area) {
-		return false
-	}
-	if !this.Data.Equal(that1.Data) {
-		return false
-	}
-	if this.Timestamp != that1.Timestamp {
-		return false
-	}
-	if this.Printer != that1.Printer {
-		return false
-	}
-	if this.JobId != that1.JobId {
-		return false
-	}
-	if this.Charset != that1.Charset {
-		return false
-	}
-	return true
-}
-func (this *BinaryJob) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*BinaryJob)
-	if !ok {
-		that2, ok := that.(BinaryJob)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.Printer != that1.Printer {
-		return false
-	}
-	if !this.Data.Equal(that1.Data) {
-		return false
-	}
-	if this.JobId != that1.JobId {
-		return false
-	}
-	return true
-}
-func (this *IdName) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*IdName)
-	if !ok {
-		that2, ok := that.(IdName)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.Id != that1.Id {
-		return false
-	}
-	if this.Name != that1.Name {
-		return false
-	}
-	return true
-}
-func (this *Computer) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*Computer)
-	if !ok {
-		that2, ok := that.(Computer)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.Id != that1.Id {
-		return false
-	}
-	if this.Name != that1.Name {
-		return false
-	}
-	return true
-}
-func (this *Ticket) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*Ticket)
-	if !ok {
-		that2, ok := that.(Ticket)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if !this.Contest.Equal(that1.Contest) {
-		return false
-	}
-	if !this.Team.Equal(that1.Team) {
-		return false
-	}
-	if !this.Area.Equal(that1.Area) {
-		return false
-	}
-	if !this.Computer.Equal(that1.Computer) {
-		return false
-	}
-	if !this.Problem.Equal(that1.Problem) {
-		return false
-	}
-	if this.SubmitId != that1.SubmitId {
-		return false
-	}
-	if this.JudgeTime != that1.JudgeTime {
-		return false
-	}
-	if len(this.Submit) != len(that1.Submit) {
-		return false
-	}
-	for i := range this.Submit {
-		if !this.Submit[i].Equal(that1.Submit[i]) {
-			return false
-		}
-	}
-	if this.Printer != that1.Printer {
-		return false
-	}
-	return true
-}
-func (this *Ticket_Submit) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*Ticket_Submit)
-	if !ok {
-		that2, ok := that.(Ticket_Submit)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.SubmitNumber != that1.SubmitNumber {
-		return false
-	}
-	if this.Arrived != that1.Arrived {
-		return false
-	}
-	if this.Compiled != that1.Compiled {
-		return false
-	}
-	if !this.School.Equal(that1.School) {
-		return false
-	}
-	if !this.Acm.Equal(that1.Acm) {
-		return false
-	}
-	return true
-}
-func (this *Ticket_Submit_School) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*Ticket_Submit_School)
-	if !ok {
-		that2, ok := that.(Ticket_Submit_School)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.TestsTaken != that1.TestsTaken {
-		return false
-	}
-	if this.TestsPassed != that1.TestsPassed {
-		return false
-	}
-	return true
-}
-func (this *Ticket_Submit_ACM) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*Ticket_Submit_ACM)
-	if !ok {
-		that2, ok := that.(Ticket_Submit_ACM)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.Result != that1.Result {
-		return false
-	}
-	if this.TestId != that1.TestId {
-		return false
-	}
-	return true
-}
-func (this *Ticket_Problem) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*Ticket_Problem)
-	if !ok {
-		that2, ok := that.(Ticket_Problem)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.Id != that1.Id {
-		return false
-	}
-	if this.Name != that1.Name {
-		return false
-	}
-	return true
-}
-func (this *Blob) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 7)
-	s = append(s, "&tickets.Blob{")
-	s = append(s, "Data: "+fmt.Sprintf("%#v", this.Data)+",\n")
-	if this.Compression != nil {
-		s = append(s, "Compression: "+fmt.Sprintf("%#v", this.Compression)+",\n")
-	}
-	s = append(s, "Sha1: "+fmt.Sprintf("%#v", this.Sha1)+",\n")
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *Blob_CompressionInfo) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 6)
-	s = append(s, "&tickets.Blob_CompressionInfo{")
-	s = append(s, "Method: "+fmt.Sprintf("%#v", this.Method)+",\n")
-	s = append(s, "OriginalSize: "+fmt.Sprintf("%#v", this.OriginalSize)+",\n")
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *PrintJob) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 14)
-	s = append(s, "&tickets.PrintJob{")
-	s = append(s, "Filename: "+fmt.Sprintf("%#v", this.Filename)+",\n")
-	if this.Contest != nil {
-		s = append(s, "Contest: "+fmt.Sprintf("%#v", this.Contest)+",\n")
-	}
-	if this.Team != nil {
-		s = append(s, "Team: "+fmt.Sprintf("%#v", this.Team)+",\n")
-	}
-	if this.Computer != nil {
-		s = append(s, "Computer: "+fmt.Sprintf("%#v", this.Computer)+",\n")
-	}
-	if this.Area != nil {
-		s = append(s, "Area: "+fmt.Sprintf("%#v", this.Area)+",\n")
-	}
-	if this.Data != nil {
-		s = append(s, "Data: "+fmt.Sprintf("%#v", this.Data)+",\n")
-	}
-	s = append(s, "Timestamp: "+fmt.Sprintf("%#v", this.Timestamp)+",\n")
-	s = append(s, "Printer: "+fmt.Sprintf("%#v", this.Printer)+",\n")
-	s = append(s, "JobId: "+fmt.Sprintf("%#v", this.JobId)+",\n")
-	s = append(s, "Charset: "+fmt.Sprintf("%#v", this.Charset)+",\n")
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *BinaryJob) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 7)
-	s = append(s, "&tickets.BinaryJob{")
-	s = append(s, "Printer: "+fmt.Sprintf("%#v", this.Printer)+",\n")
-	if this.Data != nil {
-		s = append(s, "Data: "+fmt.Sprintf("%#v", this.Data)+",\n")
-	}
-	s = append(s, "JobId: "+fmt.Sprintf("%#v", this.JobId)+",\n")
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *IdName) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 6)
-	s = append(s, "&tickets.IdName{")
-	s = append(s, "Id: "+fmt.Sprintf("%#v", this.Id)+",\n")
-	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *Computer) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 6)
-	s = append(s, "&tickets.Computer{")
-	s = append(s, "Id: "+fmt.Sprintf("%#v", this.Id)+",\n")
-	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *Ticket) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 13)
-	s = append(s, "&tickets.Ticket{")
-	if this.Contest != nil {
-		s = append(s, "Contest: "+fmt.Sprintf("%#v", this.Contest)+",\n")
-	}
-	if this.Team != nil {
-		s = append(s, "Team: "+fmt.Sprintf("%#v", this.Team)+",\n")
-	}
-	if this.Area != nil {
-		s = append(s, "Area: "+fmt.Sprintf("%#v", this.Area)+",\n")
-	}
-	if this.Computer != nil {
-		s = append(s, "Computer: "+fmt.Sprintf("%#v", this.Computer)+",\n")
-	}
-	if this.Problem != nil {
-		s = append(s, "Problem: "+fmt.Sprintf("%#v", this.Problem)+",\n")
-	}
-	s = append(s, "SubmitId: "+fmt.Sprintf("%#v", this.SubmitId)+",\n")
-	s = append(s, "JudgeTime: "+fmt.Sprintf("%#v", this.JudgeTime)+",\n")
-	if this.Submit != nil {
-		s = append(s, "Submit: "+fmt.Sprintf("%#v", this.Submit)+",\n")
-	}
-	s = append(s, "Printer: "+fmt.Sprintf("%#v", this.Printer)+",\n")
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *Ticket_Submit) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 9)
-	s = append(s, "&tickets.Ticket_Submit{")
-	s = append(s, "SubmitNumber: "+fmt.Sprintf("%#v", this.SubmitNumber)+",\n")
-	s = append(s, "Arrived: "+fmt.Sprintf("%#v", this.Arrived)+",\n")
-	s = append(s, "Compiled: "+fmt.Sprintf("%#v", this.Compiled)+",\n")
-	if this.School != nil {
-		s = append(s, "School: "+fmt.Sprintf("%#v", this.School)+",\n")
-	}
-	if this.Acm != nil {
-		s = append(s, "Acm: "+fmt.Sprintf("%#v", this.Acm)+",\n")
-	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *Ticket_Submit_School) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 6)
-	s = append(s, "&tickets.Ticket_Submit_School{")
-	s = append(s, "TestsTaken: "+fmt.Sprintf("%#v", this.TestsTaken)+",\n")
-	s = append(s, "TestsPassed: "+fmt.Sprintf("%#v", this.TestsPassed)+",\n")
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *Ticket_Submit_ACM) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 6)
-	s = append(s, "&tickets.Ticket_Submit_ACM{")
-	s = append(s, "Result: "+fmt.Sprintf("%#v", this.Result)+",\n")
-	s = append(s, "TestId: "+fmt.Sprintf("%#v", this.TestId)+",\n")
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *Ticket_Problem) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 6)
-	s = append(s, "&tickets.Ticket_Problem{")
-	s = append(s, "Id: "+fmt.Sprintf("%#v", this.Id)+",\n")
-	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func valueToGoStringTickets(v interface{}, typ string) string {
-	rv := reflect.ValueOf(v)
-	if rv.IsNil() {
-		return "nil"
-	}
-	pv := reflect.Indirect(rv).Interface()
-	return fmt.Sprintf("func(v %v) *%v { return &v } ( %#v )", typ, typ, pv)
-}
-func (m *Blob) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *Blob) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if len(m.Data) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintTickets(dAtA, i, uint64(len(m.Data)))
-		i += copy(dAtA[i:], m.Data)
-	}
-	if m.Compression != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintTickets(dAtA, i, uint64(m.Compression.Size()))
-		n1, err := m.Compression.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n1
-	}
-	if len(m.Sha1) > 0 {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintTickets(dAtA, i, uint64(len(m.Sha1)))
-		i += copy(dAtA[i:], m.Sha1)
-	}
-	return i, nil
-}
-
-func (m *Blob_CompressionInfo) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *Blob_CompressionInfo) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Method != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintTickets(dAtA, i, uint64(m.Method))
-	}
-	if m.OriginalSize != 0 {
-		dAtA[i] = 0x10
-		i++
-		i = encodeVarintTickets(dAtA, i, uint64(m.OriginalSize))
-	}
-	return i, nil
-}
-
 func (m *PrintJob) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -1445,51 +703,47 @@ func (m *PrintJob) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x12
 		i++
 		i = encodeVarintTickets(dAtA, i, uint64(m.Contest.Size()))
-		n2, err := m.Contest.MarshalTo(dAtA[i:])
+		n1, err := m.Contest.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n2
+		i += n1
 	}
 	if m.Team != nil {
 		dAtA[i] = 0x1a
 		i++
 		i = encodeVarintTickets(dAtA, i, uint64(m.Team.Size()))
-		n3, err := m.Team.MarshalTo(dAtA[i:])
+		n2, err := m.Team.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n3
+		i += n2
 	}
 	if m.Computer != nil {
 		dAtA[i] = 0x22
 		i++
 		i = encodeVarintTickets(dAtA, i, uint64(m.Computer.Size()))
-		n4, err := m.Computer.MarshalTo(dAtA[i:])
+		n3, err := m.Computer.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n4
+		i += n3
 	}
 	if m.Area != nil {
 		dAtA[i] = 0x2a
 		i++
 		i = encodeVarintTickets(dAtA, i, uint64(m.Area.Size()))
-		n5, err := m.Area.MarshalTo(dAtA[i:])
+		n4, err := m.Area.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n5
+		i += n4
 	}
-	if m.Data != nil {
+	if len(m.Data) > 0 {
 		dAtA[i] = 0x32
 		i++
-		i = encodeVarintTickets(dAtA, i, uint64(m.Data.Size()))
-		n6, err := m.Data.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n6
+		i = encodeVarintTickets(dAtA, i, uint64(len(m.Data)))
+		i += copy(dAtA[i:], m.Data)
 	}
 	if m.Timestamp != 0 {
 		dAtA[i] = 0x38
@@ -1512,6 +766,9 @@ func (m *PrintJob) MarshalTo(dAtA []byte) (int, error) {
 		i++
 		i = encodeVarintTickets(dAtA, i, uint64(len(m.Charset)))
 		i += copy(dAtA[i:], m.Charset)
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
 	}
 	return i, nil
 }
@@ -1537,21 +794,20 @@ func (m *BinaryJob) MarshalTo(dAtA []byte) (int, error) {
 		i = encodeVarintTickets(dAtA, i, uint64(len(m.Printer)))
 		i += copy(dAtA[i:], m.Printer)
 	}
-	if m.Data != nil {
+	if len(m.Data) > 0 {
 		dAtA[i] = 0x12
 		i++
-		i = encodeVarintTickets(dAtA, i, uint64(m.Data.Size()))
-		n7, err := m.Data.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n7
+		i = encodeVarintTickets(dAtA, i, uint64(len(m.Data)))
+		i += copy(dAtA[i:], m.Data)
 	}
 	if len(m.JobId) > 0 {
 		dAtA[i] = 0x1a
 		i++
 		i = encodeVarintTickets(dAtA, i, uint64(len(m.JobId)))
 		i += copy(dAtA[i:], m.JobId)
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
 	}
 	return i, nil
 }
@@ -1581,6 +837,9 @@ func (m *IdName) MarshalTo(dAtA []byte) (int, error) {
 		i++
 		i = encodeVarintTickets(dAtA, i, uint64(len(m.Name)))
 		i += copy(dAtA[i:], m.Name)
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
 	}
 	return i, nil
 }
@@ -1612,6 +871,9 @@ func (m *Computer) MarshalTo(dAtA []byte) (int, error) {
 		i = encodeVarintTickets(dAtA, i, uint64(len(m.Name)))
 		i += copy(dAtA[i:], m.Name)
 	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
 	return i, nil
 }
 
@@ -1634,51 +896,51 @@ func (m *Ticket) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0xa
 		i++
 		i = encodeVarintTickets(dAtA, i, uint64(m.Contest.Size()))
-		n8, err := m.Contest.MarshalTo(dAtA[i:])
+		n5, err := m.Contest.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n8
+		i += n5
 	}
 	if m.Team != nil {
 		dAtA[i] = 0x12
 		i++
 		i = encodeVarintTickets(dAtA, i, uint64(m.Team.Size()))
-		n9, err := m.Team.MarshalTo(dAtA[i:])
+		n6, err := m.Team.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n9
+		i += n6
 	}
 	if m.Area != nil {
 		dAtA[i] = 0x1a
 		i++
 		i = encodeVarintTickets(dAtA, i, uint64(m.Area.Size()))
-		n10, err := m.Area.MarshalTo(dAtA[i:])
+		n7, err := m.Area.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n10
+		i += n7
 	}
 	if m.Computer != nil {
 		dAtA[i] = 0x22
 		i++
 		i = encodeVarintTickets(dAtA, i, uint64(m.Computer.Size()))
-		n11, err := m.Computer.MarshalTo(dAtA[i:])
+		n8, err := m.Computer.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n11
+		i += n8
 	}
 	if m.Problem != nil {
 		dAtA[i] = 0x2a
 		i++
 		i = encodeVarintTickets(dAtA, i, uint64(m.Problem.Size()))
-		n12, err := m.Problem.MarshalTo(dAtA[i:])
+		n9, err := m.Problem.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n12
+		i += n9
 	}
 	if m.SubmitId != 0 {
 		dAtA[i] = 0x30
@@ -1707,6 +969,9 @@ func (m *Ticket) MarshalTo(dAtA []byte) (int, error) {
 		i++
 		i = encodeVarintTickets(dAtA, i, uint64(len(m.Printer)))
 		i += copy(dAtA[i:], m.Printer)
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
 	}
 	return i, nil
 }
@@ -1750,21 +1015,24 @@ func (m *Ticket_Submit) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x22
 		i++
 		i = encodeVarintTickets(dAtA, i, uint64(m.School.Size()))
-		n13, err := m.School.MarshalTo(dAtA[i:])
+		n10, err := m.School.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n13
+		i += n10
 	}
 	if m.Acm != nil {
 		dAtA[i] = 0x2a
 		i++
 		i = encodeVarintTickets(dAtA, i, uint64(m.Acm.Size()))
-		n14, err := m.Acm.MarshalTo(dAtA[i:])
+		n11, err := m.Acm.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n14
+		i += n11
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
 	}
 	return i, nil
 }
@@ -1794,6 +1062,9 @@ func (m *Ticket_Submit_School) MarshalTo(dAtA []byte) (int, error) {
 		i++
 		i = encodeVarintTickets(dAtA, i, uint64(m.TestsPassed))
 	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
 	return i, nil
 }
 
@@ -1822,6 +1093,9 @@ func (m *Ticket_Submit_ACM) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x10
 		i++
 		i = encodeVarintTickets(dAtA, i, uint64(m.TestId))
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
 	}
 	return i, nil
 }
@@ -1853,6 +1127,9 @@ func (m *Ticket_Problem) MarshalTo(dAtA []byte) (int, error) {
 		i = encodeVarintTickets(dAtA, i, uint64(len(m.Name)))
 		i += copy(dAtA[i:], m.Name)
 	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
 	return i, nil
 }
 
@@ -1865,37 +1142,10 @@ func encodeVarintTickets(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return offset + 1
 }
-func (m *Blob) Size() (n int) {
-	var l int
-	_ = l
-	l = len(m.Data)
-	if l > 0 {
-		n += 1 + l + sovTickets(uint64(l))
-	}
-	if m.Compression != nil {
-		l = m.Compression.Size()
-		n += 1 + l + sovTickets(uint64(l))
-	}
-	l = len(m.Sha1)
-	if l > 0 {
-		n += 1 + l + sovTickets(uint64(l))
-	}
-	return n
-}
-
-func (m *Blob_CompressionInfo) Size() (n int) {
-	var l int
-	_ = l
-	if m.Method != 0 {
-		n += 1 + sovTickets(uint64(m.Method))
-	}
-	if m.OriginalSize != 0 {
-		n += 1 + sovTickets(uint64(m.OriginalSize))
-	}
-	return n
-}
-
 func (m *PrintJob) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	l = len(m.Filename)
@@ -1918,8 +1168,8 @@ func (m *PrintJob) Size() (n int) {
 		l = m.Area.Size()
 		n += 1 + l + sovTickets(uint64(l))
 	}
-	if m.Data != nil {
-		l = m.Data.Size()
+	l = len(m.Data)
+	if l > 0 {
 		n += 1 + l + sovTickets(uint64(l))
 	}
 	if m.Timestamp != 0 {
@@ -1936,28 +1186,40 @@ func (m *PrintJob) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovTickets(uint64(l))
 	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
 	return n
 }
 
 func (m *BinaryJob) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	l = len(m.Printer)
 	if l > 0 {
 		n += 1 + l + sovTickets(uint64(l))
 	}
-	if m.Data != nil {
-		l = m.Data.Size()
+	l = len(m.Data)
+	if l > 0 {
 		n += 1 + l + sovTickets(uint64(l))
 	}
 	l = len(m.JobId)
 	if l > 0 {
 		n += 1 + l + sovTickets(uint64(l))
 	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
 	return n
 }
 
 func (m *IdName) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	if m.Id != 0 {
@@ -1967,10 +1229,16 @@ func (m *IdName) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovTickets(uint64(l))
 	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
 	return n
 }
 
 func (m *Computer) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	l = len(m.Id)
@@ -1981,10 +1249,16 @@ func (m *Computer) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovTickets(uint64(l))
 	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
 	return n
 }
 
 func (m *Ticket) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	if m.Contest != nil {
@@ -2023,10 +1297,16 @@ func (m *Ticket) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovTickets(uint64(l))
 	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
 	return n
 }
 
 func (m *Ticket_Submit) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	if m.SubmitNumber != 0 {
@@ -2046,10 +1326,16 @@ func (m *Ticket_Submit) Size() (n int) {
 		l = m.Acm.Size()
 		n += 1 + l + sovTickets(uint64(l))
 	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
 	return n
 }
 
 func (m *Ticket_Submit_School) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	if m.TestsTaken != 0 {
@@ -2058,10 +1344,16 @@ func (m *Ticket_Submit_School) Size() (n int) {
 	if m.TestsPassed != 0 {
 		n += 1 + sovTickets(uint64(m.TestsPassed))
 	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
 	return n
 }
 
 func (m *Ticket_Submit_ACM) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	l = len(m.Result)
@@ -2071,10 +1363,16 @@ func (m *Ticket_Submit_ACM) Size() (n int) {
 	if m.TestId != 0 {
 		n += 1 + sovTickets(uint64(m.TestId))
 	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
 	return n
 }
 
 func (m *Ticket_Problem) Size() (n int) {
+	if m == nil {
+		return 0
+	}
 	var l int
 	_ = l
 	l = len(m.Id)
@@ -2084,6 +1382,9 @@ func (m *Ticket_Problem) Size() (n int) {
 	l = len(m.Name)
 	if l > 0 {
 		n += 1 + l + sovTickets(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
 	}
 	return n
 }
@@ -2100,388 +1401,6 @@ func sovTickets(x uint64) (n int) {
 }
 func sozTickets(x uint64) (n int) {
 	return sovTickets(uint64((x << 1) ^ uint64((int64(x) >> 63))))
-}
-func (this *Blob) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&Blob{`,
-		`Data:` + fmt.Sprintf("%v", this.Data) + `,`,
-		`Compression:` + strings.Replace(fmt.Sprintf("%v", this.Compression), "Blob_CompressionInfo", "Blob_CompressionInfo", 1) + `,`,
-		`Sha1:` + fmt.Sprintf("%v", this.Sha1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *Blob_CompressionInfo) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&Blob_CompressionInfo{`,
-		`Method:` + fmt.Sprintf("%v", this.Method) + `,`,
-		`OriginalSize:` + fmt.Sprintf("%v", this.OriginalSize) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *PrintJob) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&PrintJob{`,
-		`Filename:` + fmt.Sprintf("%v", this.Filename) + `,`,
-		`Contest:` + strings.Replace(fmt.Sprintf("%v", this.Contest), "IdName", "IdName", 1) + `,`,
-		`Team:` + strings.Replace(fmt.Sprintf("%v", this.Team), "IdName", "IdName", 1) + `,`,
-		`Computer:` + strings.Replace(fmt.Sprintf("%v", this.Computer), "Computer", "Computer", 1) + `,`,
-		`Area:` + strings.Replace(fmt.Sprintf("%v", this.Area), "IdName", "IdName", 1) + `,`,
-		`Data:` + strings.Replace(fmt.Sprintf("%v", this.Data), "Blob", "Blob", 1) + `,`,
-		`Timestamp:` + fmt.Sprintf("%v", this.Timestamp) + `,`,
-		`Printer:` + fmt.Sprintf("%v", this.Printer) + `,`,
-		`JobId:` + fmt.Sprintf("%v", this.JobId) + `,`,
-		`Charset:` + fmt.Sprintf("%v", this.Charset) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *BinaryJob) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&BinaryJob{`,
-		`Printer:` + fmt.Sprintf("%v", this.Printer) + `,`,
-		`Data:` + strings.Replace(fmt.Sprintf("%v", this.Data), "Blob", "Blob", 1) + `,`,
-		`JobId:` + fmt.Sprintf("%v", this.JobId) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *IdName) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&IdName{`,
-		`Id:` + fmt.Sprintf("%v", this.Id) + `,`,
-		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *Computer) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&Computer{`,
-		`Id:` + fmt.Sprintf("%v", this.Id) + `,`,
-		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *Ticket) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&Ticket{`,
-		`Contest:` + strings.Replace(fmt.Sprintf("%v", this.Contest), "IdName", "IdName", 1) + `,`,
-		`Team:` + strings.Replace(fmt.Sprintf("%v", this.Team), "IdName", "IdName", 1) + `,`,
-		`Area:` + strings.Replace(fmt.Sprintf("%v", this.Area), "IdName", "IdName", 1) + `,`,
-		`Computer:` + strings.Replace(fmt.Sprintf("%v", this.Computer), "Computer", "Computer", 1) + `,`,
-		`Problem:` + strings.Replace(fmt.Sprintf("%v", this.Problem), "Ticket_Problem", "Ticket_Problem", 1) + `,`,
-		`SubmitId:` + fmt.Sprintf("%v", this.SubmitId) + `,`,
-		`JudgeTime:` + fmt.Sprintf("%v", this.JudgeTime) + `,`,
-		`Submit:` + strings.Replace(fmt.Sprintf("%v", this.Submit), "Ticket_Submit", "Ticket_Submit", 1) + `,`,
-		`Printer:` + fmt.Sprintf("%v", this.Printer) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *Ticket_Submit) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&Ticket_Submit{`,
-		`SubmitNumber:` + fmt.Sprintf("%v", this.SubmitNumber) + `,`,
-		`Arrived:` + fmt.Sprintf("%v", this.Arrived) + `,`,
-		`Compiled:` + fmt.Sprintf("%v", this.Compiled) + `,`,
-		`School:` + strings.Replace(fmt.Sprintf("%v", this.School), "Ticket_Submit_School", "Ticket_Submit_School", 1) + `,`,
-		`Acm:` + strings.Replace(fmt.Sprintf("%v", this.Acm), "Ticket_Submit_ACM", "Ticket_Submit_ACM", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *Ticket_Submit_School) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&Ticket_Submit_School{`,
-		`TestsTaken:` + fmt.Sprintf("%v", this.TestsTaken) + `,`,
-		`TestsPassed:` + fmt.Sprintf("%v", this.TestsPassed) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *Ticket_Submit_ACM) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&Ticket_Submit_ACM{`,
-		`Result:` + fmt.Sprintf("%v", this.Result) + `,`,
-		`TestId:` + fmt.Sprintf("%v", this.TestId) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *Ticket_Problem) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&Ticket_Problem{`,
-		`Id:` + fmt.Sprintf("%v", this.Id) + `,`,
-		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func valueToStringTickets(v interface{}) string {
-	rv := reflect.ValueOf(v)
-	if rv.IsNil() {
-		return "nil"
-	}
-	pv := reflect.Indirect(rv).Interface()
-	return fmt.Sprintf("*%v", pv)
-}
-func (m *Blob) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowTickets
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Blob: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Blob: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTickets
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthTickets
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Data = append(m.Data[:0], dAtA[iNdEx:postIndex]...)
-			if m.Data == nil {
-				m.Data = []byte{}
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Compression", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTickets
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthTickets
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Compression == nil {
-				m.Compression = &Blob_CompressionInfo{}
-			}
-			if err := m.Compression.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Sha1", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTickets
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthTickets
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Sha1 = append(m.Sha1[:0], dAtA[iNdEx:postIndex]...)
-			if m.Sha1 == nil {
-				m.Sha1 = []byte{}
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipTickets(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthTickets
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *Blob_CompressionInfo) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowTickets
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CompressionInfo: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CompressionInfo: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Method", wireType)
-			}
-			m.Method = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTickets
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Method |= (Blob_CompressionInfo_CompressionType(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field OriginalSize", wireType)
-			}
-			m.OriginalSize = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTickets
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.OriginalSize |= (uint32(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipTickets(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthTickets
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
 }
 func (m *PrintJob) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
@@ -2677,7 +1596,7 @@ func (m *PrintJob) Unmarshal(dAtA []byte) error {
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
 			}
-			var msglen int
+			var byteLen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowTickets
@@ -2687,23 +1606,21 @@ func (m *PrintJob) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
+			if byteLen < 0 {
 				return ErrInvalidLengthTickets
 			}
-			postIndex := iNdEx + msglen
+			postIndex := iNdEx + byteLen
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
+			m.Data = append(m.Data[:0], dAtA[iNdEx:postIndex]...)
 			if m.Data == nil {
-				m.Data = &Blob{}
-			}
-			if err := m.Data.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
+				m.Data = []byte{}
 			}
 			iNdEx = postIndex
 		case 7:
@@ -2814,6 +1731,7 @@ func (m *PrintJob) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -2885,7 +1803,7 @@ func (m *BinaryJob) Unmarshal(dAtA []byte) error {
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
 			}
-			var msglen int
+			var byteLen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowTickets
@@ -2895,23 +1813,21 @@ func (m *BinaryJob) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				byteLen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
+			if byteLen < 0 {
 				return ErrInvalidLengthTickets
 			}
-			postIndex := iNdEx + msglen
+			postIndex := iNdEx + byteLen
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
+			m.Data = append(m.Data[:0], dAtA[iNdEx:postIndex]...)
 			if m.Data == nil {
-				m.Data = &Blob{}
-			}
-			if err := m.Data.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
+				m.Data = []byte{}
 			}
 			iNdEx = postIndex
 		case 3:
@@ -2955,6 +1871,7 @@ func (m *BinaryJob) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -3053,6 +1970,7 @@ func (m *IdName) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -3161,6 +2079,7 @@ func (m *Computer) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -3474,6 +2393,7 @@ func (m *Ticket) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -3648,6 +2568,7 @@ func (m *Ticket_Submit) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -3736,6 +2657,7 @@ func (m *Ticket_Submit_School) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -3834,6 +2756,7 @@ func (m *Ticket_Submit_ACM) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -3942,6 +2865,7 @@ func (m *Ticket_Problem) Unmarshal(dAtA []byte) error {
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
 			iNdEx += skippy
 		}
 	}
@@ -4056,56 +2980,46 @@ var (
 	ErrIntOverflowTickets   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("tickets.proto", fileDescriptor_tickets_e960824f3b1e86b7) }
+func init() { proto.RegisterFile("tickets.proto", fileDescriptor_tickets_cf0ffa94fc4e9142) }
 
-var fileDescriptor_tickets_e960824f3b1e86b7 = []byte{
-	// 768 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x55, 0xcd, 0x4e, 0x22, 0x59,
-	0x14, 0xa6, 0x0a, 0x2c, 0x8a, 0x03, 0xa8, 0x73, 0x93, 0xd1, 0x0a, 0x33, 0xd6, 0x20, 0x6e, 0x98,
-	0x44, 0x49, 0xd4, 0xcc, 0x6c, 0x27, 0xc2, 0x98, 0x0c, 0x13, 0x45, 0x73, 0x65, 0x35, 0x1b, 0x72,
-	0x8b, 0xba, 0xca, 0x55, 0xaa, 0x8a, 0x54, 0x5d, 0x26, 0xd1, 0x55, 0x3f, 0x42, 0x3f, 0x44, 0x2f,
-	0x7a, 0xdd, 0x4f, 0xd1, 0xab, 0x8e, 0xab, 0x4e, 0x2f, 0x5b, 0x3a, 0x9d, 0xf4, 0xd2, 0x47, 0xe8,
-	0xdc, 0x9f, 0x42, 0x30, 0x62, 0xec, 0x5d, 0x9d, 0x73, 0xbf, 0xef, 0xfc, 0x7c, 0xdf, 0x21, 0x40,
-	0x99, 0xb3, 0xfe, 0x15, 0xe5, 0x49, 0x63, 0x14, 0x47, 0x3c, 0x42, 0x79, 0x1d, 0xd6, 0xde, 0x98,
-	0x90, 0x6b, 0x0e, 0x23, 0x0f, 0x21, 0xc8, 0xf9, 0x84, 0x13, 0xc7, 0xa8, 0x1a, 0xf5, 0x12, 0x96,
-	0xdf, 0xe8, 0x2f, 0x28, 0xf6, 0xa3, 0x60, 0x14, 0xd3, 0x24, 0x61, 0x51, 0xe8, 0x98, 0x55, 0xa3,
-	0x5e, 0xdc, 0xdb, 0x68, 0xa4, 0xa5, 0x04, 0xaf, 0xd1, 0x7a, 0x00, 0xb4, 0xc3, 0xf3, 0x08, 0xcf,
-	0x32, 0x44, 0xd1, 0x64, 0x40, 0x76, 0x9d, 0xac, 0x2a, 0x2a, 0xbe, 0x2b, 0xef, 0x0c, 0x58, 0x79,
-	0x44, 0x42, 0x87, 0x60, 0x05, 0x94, 0x0f, 0x22, 0x5f, 0xb6, 0x5f, 0xde, 0xdb, 0x79, 0xb6, 0xc7,
-	0x6c, 0xdc, 0xbd, 0x1e, 0x51, 0xac, 0xc9, 0x68, 0x0b, 0xca, 0x51, 0xcc, 0x2e, 0x58, 0x48, 0x86,
-	0xbd, 0x84, 0xdd, 0x50, 0x39, 0x71, 0x19, 0x97, 0xd2, 0xe4, 0x19, 0xbb, 0xa1, 0xb5, 0xfd, 0xb9,
-	0xf6, 0x82, 0x8f, 0x56, 0xa0, 0x78, 0x7c, 0xd8, 0xfd, 0xe7, 0xe4, 0xef, 0x5e, 0xe7, 0xa4, 0x73,
-	0xb8, 0x9a, 0x99, 0x49, 0xfc, 0x77, 0xd4, 0x6e, 0xae, 0x1a, 0xb5, 0x8f, 0x26, 0xd8, 0xa7, 0x31,
-	0x0b, 0xf9, 0xbf, 0x91, 0x87, 0x2a, 0x60, 0x9f, 0xb3, 0x21, 0x0d, 0x49, 0x40, 0xe5, 0xbc, 0x05,
-	0x3c, 0x8d, 0xd1, 0xef, 0x90, 0xef, 0x47, 0x21, 0xa7, 0x09, 0xd7, 0x72, 0xad, 0x4c, 0x57, 0x69,
-	0xfb, 0x1d, 0x12, 0x50, 0x9c, 0xbe, 0xa3, 0x2d, 0xc8, 0x71, 0x4a, 0x02, 0x29, 0xce, 0x13, 0x38,
-	0xf9, 0x88, 0x76, 0xc0, 0x16, 0x82, 0x8e, 0x39, 0x8d, 0x9d, 0x9c, 0x04, 0xfe, 0x34, 0x05, 0xb6,
-	0xf4, 0x03, 0x9e, 0x42, 0x44, 0x4d, 0x12, 0x53, 0xe2, 0x2c, 0x2d, 0xa8, 0x29, 0x1e, 0xd1, 0xa6,
-	0xb6, 0xda, 0x92, 0xa0, 0xf2, 0x9c, 0xd6, 0xda, 0xf9, 0x5f, 0xa1, 0xc0, 0x59, 0x40, 0x13, 0x4e,
-	0x82, 0x91, 0x93, 0xaf, 0x1a, 0xf5, 0x1c, 0x7e, 0x48, 0x20, 0x07, 0xf2, 0x23, 0x21, 0x06, 0x8d,
-	0x1d, 0x5b, 0xee, 0x9f, 0x86, 0xe8, 0x67, 0xb0, 0x2e, 0x23, 0xaf, 0xc7, 0x7c, 0xa7, 0x20, 0xa5,
-	0x5f, 0xba, 0x8c, 0xbc, 0xb6, 0x2f, 0x08, 0xfd, 0x01, 0x89, 0x13, 0xca, 0x1d, 0x50, 0x04, 0x1d,
-	0xd6, 0x7a, 0x50, 0x68, 0xb2, 0x90, 0xc4, 0xd7, 0x42, 0xd8, 0x99, 0xba, 0xc6, 0x7c, 0xdd, 0x74,
-	0x64, 0x73, 0xf1, 0xc8, 0x0f, 0xad, 0xb3, 0x92, 0xab, 0x5a, 0xd7, 0xb6, 0xc1, 0x52, 0xcb, 0xa3,
-	0x65, 0x30, 0x99, 0x3a, 0xb0, 0x32, 0x36, 0x99, 0x2f, 0x8e, 0x53, 0x5a, 0x68, 0x4a, 0xb8, 0xfc,
-	0xae, 0x35, 0xc0, 0x4e, 0x55, 0x9d, 0xc1, 0x17, 0x16, 0xe2, 0xbf, 0x2e, 0x81, 0xd5, 0x95, 0xb3,
-	0xcc, 0x3a, 0x6f, 0xbc, 0xd0, 0x79, 0xf3, 0x39, 0xe7, 0x53, 0x2b, 0xb3, 0xcf, 0x59, 0xf9, 0x83,
-	0xe7, 0xb1, 0x2b, 0x04, 0x8e, 0xbc, 0x21, 0x0d, 0xf4, 0x85, 0xac, 0x4f, 0xd1, 0x6a, 0x8b, 0xc6,
-	0xa9, 0x7a, 0xc6, 0x29, 0x0e, 0xfd, 0x02, 0x85, 0x64, 0xec, 0x05, 0x8c, 0x0b, 0x65, 0x2d, 0x29,
-	0x9e, 0xad, 0x12, 0x6d, 0x1f, 0x6d, 0x00, 0x5c, 0x8e, 0xfd, 0x0b, 0xda, 0x13, 0xb7, 0x91, 0xde,
-	0x89, 0xcc, 0x74, 0x59, 0x40, 0x51, 0x03, 0x2c, 0x05, 0x75, 0xec, 0x6a, 0xb6, 0x5e, 0xdc, 0x5b,
-	0x7b, 0xdc, 0xed, 0x4c, 0xbe, 0x62, 0x8d, 0x9a, 0xf5, 0xbf, 0x30, 0xe7, 0x7f, 0xe5, 0x83, 0x09,
-	0x96, 0x02, 0x8b, 0x1f, 0xb9, 0x1e, 0x28, 0x1c, 0x07, 0x9e, 0x3e, 0x95, 0x32, 0x2e, 0xa9, 0x64,
-	0x47, 0xe6, 0x44, 0x25, 0x12, 0xc7, 0xec, 0x7f, 0xea, 0x4b, 0x91, 0x73, 0x38, 0x0d, 0xc5, 0x8f,
-	0x57, 0xc8, 0xc1, 0x86, 0x54, 0x1d, 0x8a, 0x8d, 0xa7, 0x31, 0xfa, 0x03, 0xac, 0xa4, 0x3f, 0x88,
-	0xa2, 0xa1, 0xd6, 0x72, 0xe3, 0xe9, 0x79, 0x1b, 0x67, 0x12, 0x84, 0x35, 0x18, 0x6d, 0x43, 0x96,
-	0xf4, 0x53, 0x45, 0x2b, 0x0b, 0x38, 0x07, 0xad, 0x63, 0x2c, 0x60, 0x95, 0x23, 0xb0, 0x14, 0x1f,
-	0xfd, 0x06, 0x45, 0x71, 0x0e, 0x49, 0x8f, 0x93, 0x2b, 0x1a, 0xea, 0x3d, 0x40, 0xa6, 0xba, 0x22,
-	0x83, 0x36, 0xa1, 0xa4, 0x00, 0x23, 0x92, 0x24, 0x7a, 0x95, 0x32, 0x56, 0xa4, 0x53, 0x99, 0xaa,
-	0xfc, 0x09, 0xd9, 0x83, 0xd6, 0x31, 0x5a, 0x03, 0x2b, 0xa6, 0xc9, 0x78, 0xc8, 0xf5, 0xbd, 0xea,
-	0x08, 0xad, 0x43, 0x5e, 0xa0, 0x85, 0x77, 0x8a, 0x6c, 0x89, 0xb0, 0xed, 0x57, 0x76, 0x20, 0xaf,
-	0xad, 0x7e, 0xc9, 0x9d, 0x37, 0xb7, 0x6f, 0xef, 0xdc, 0xcc, 0xa7, 0x3b, 0x37, 0x73, 0x7f, 0xe7,
-	0x1a, 0xaf, 0x26, 0xae, 0xf1, 0x76, 0xe2, 0x1a, 0xef, 0x27, 0xae, 0x71, 0x3b, 0x71, 0x8d, 0xcf,
-	0x13, 0xd7, 0xf8, 0x36, 0x71, 0x33, 0xf7, 0x13, 0xd7, 0x78, 0xfd, 0xc5, 0xcd, 0x78, 0x96, 0xfc,
-	0x93, 0xd9, 0xff, 0x1e, 0x00, 0x00, 0xff, 0xff, 0x15, 0xf0, 0xa7, 0xee, 0x75, 0x06, 0x00, 0x00,
+var fileDescriptor_tickets_cf0ffa94fc4e9142 = []byte{
+	// 594 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x54, 0xdd, 0x4e, 0xd4, 0x40,
+	0x14, 0xb6, 0xed, 0x32, 0x6d, 0x0f, 0xd4, 0x9f, 0x49, 0x84, 0x49, 0x95, 0xb5, 0x2e, 0x37, 0x35,
+	0x81, 0x26, 0x62, 0xf4, 0x1e, 0xb8, 0x5a, 0x23, 0x64, 0x33, 0x70, 0x4f, 0xa6, 0xed, 0x28, 0x03,
+	0xdb, 0x76, 0xd3, 0xce, 0x9a, 0xf8, 0x26, 0xbe, 0x91, 0x5e, 0x19, 0x1f, 0xc1, 0x60, 0x7c, 0x0f,
+	0x33, 0x3f, 0x5d, 0x16, 0x03, 0x04, 0xef, 0x7a, 0xce, 0xf9, 0xce, 0x99, 0x73, 0xbe, 0xef, 0xdb,
+	0x85, 0x48, 0x8a, 0xe2, 0x82, 0xcb, 0x2e, 0x9b, 0xb5, 0x8d, 0x6c, 0xb0, 0x6f, 0xc3, 0xd1, 0x37,
+	0x17, 0x82, 0x49, 0x2b, 0x6a, 0xf9, 0xbe, 0xc9, 0x71, 0x0c, 0xc1, 0x47, 0x31, 0xe5, 0x35, 0xab,
+	0x38, 0x71, 0x12, 0x27, 0x0d, 0xe9, 0x22, 0xc6, 0xaf, 0xc0, 0x2f, 0x9a, 0x5a, 0xf2, 0x4e, 0x12,
+	0x37, 0x71, 0xd2, 0xd5, 0xdd, 0x47, 0x59, 0x3f, 0x72, 0x5c, 0x1e, 0xb1, 0x8a, 0xd3, 0xbe, 0x8e,
+	0xb7, 0x60, 0x20, 0x39, 0xab, 0x88, 0x77, 0x33, 0x4e, 0x17, 0xf1, 0x0e, 0x04, 0x45, 0x53, 0xcd,
+	0xe6, 0x92, 0xb7, 0x64, 0xa0, 0x81, 0x4f, 0x16, 0xc0, 0x03, 0x5b, 0xa0, 0x0b, 0x88, 0x9a, 0xc9,
+	0x5a, 0xce, 0xc8, 0xca, 0x2d, 0x33, 0x55, 0x11, 0x63, 0x18, 0x94, 0x4c, 0x32, 0x82, 0x12, 0x27,
+	0x5d, 0xa3, 0xfa, 0x1b, 0x3f, 0x87, 0x50, 0x8a, 0x8a, 0x77, 0x92, 0x55, 0x33, 0xe2, 0x27, 0x4e,
+	0x3a, 0xa0, 0x57, 0x09, 0x4c, 0xc0, 0x9f, 0xa9, 0xeb, 0x79, 0x4b, 0x02, 0x7d, 0x70, 0x1f, 0xe2,
+	0xa7, 0x80, 0xce, 0x9b, 0xfc, 0x54, 0x94, 0x24, 0x4c, 0x9c, 0x34, 0xa2, 0x2b, 0xe7, 0x4d, 0x3e,
+	0x2e, 0x55, 0x43, 0x71, 0xc6, 0xda, 0x8e, 0x4b, 0x02, 0xa6, 0xc1, 0x86, 0xa3, 0x09, 0x84, 0xfb,
+	0xa2, 0x66, 0xed, 0x17, 0xc5, 0xe4, 0xd2, 0x5c, 0xe7, 0xfa, 0xdc, 0x7e, 0x47, 0x77, 0x69, 0xc7,
+	0xab, 0xb7, 0x3c, 0x0d, 0x36, 0x6f, 0x8d, 0xb6, 0x01, 0x99, 0xf3, 0xf0, 0x43, 0x70, 0x45, 0xa9,
+	0x27, 0x45, 0xd4, 0x15, 0xa5, 0x1a, 0xa2, 0x45, 0x72, 0x35, 0x5c, 0x7f, 0x8f, 0x32, 0x08, 0x7a,
+	0xde, 0x96, 0xf0, 0xe1, 0xad, 0xf8, 0x3f, 0x2b, 0x80, 0x4e, 0x34, 0x8b, 0xcb, 0xda, 0x3a, 0xf7,
+	0xd4, 0xd6, 0xbd, 0x4b, 0xdb, 0x5e, 0x2c, 0xef, 0x2e, 0xb1, 0xfe, 0xd3, 0x00, 0xaf, 0x15, 0xa3,
+	0x4d, 0x3e, 0xe5, 0x95, 0xf5, 0xc0, 0xc6, 0x02, 0x6d, 0xae, 0xc8, 0x26, 0xa6, 0x4c, 0x7b, 0x1c,
+	0x7e, 0x06, 0x61, 0x37, 0xcf, 0x2b, 0x21, 0x15, 0xb3, 0x48, 0x93, 0x17, 0x98, 0xc4, 0xb8, 0xc4,
+	0x9b, 0x00, 0xe7, 0xf3, 0xf2, 0x13, 0x3f, 0x55, 0x66, 0xe8, 0x8d, 0xa1, 0x33, 0x27, 0xa2, 0xe2,
+	0x38, 0x03, 0x64, 0xa0, 0x24, 0x48, 0xbc, 0x74, 0x75, 0x77, 0xfd, 0xdf, 0xd7, 0x8e, 0x75, 0x95,
+	0x5a, 0xd4, 0xb2, 0xe0, 0xe1, 0x35, 0xc1, 0xe3, 0x1f, 0x2e, 0x20, 0x03, 0xc6, 0x5b, 0x10, 0xd9,
+	0x85, 0xea, 0x79, 0x95, 0x5b, 0x6f, 0x44, 0x74, 0xcd, 0x24, 0x8f, 0x74, 0x4e, 0x4d, 0x62, 0x6d,
+	0x2b, 0x3e, 0xf3, 0x52, 0x93, 0x3c, 0xa0, 0x7d, 0xa8, 0x7e, 0x9e, 0x8a, 0x0e, 0x31, 0xe5, 0xc6,
+	0x28, 0x01, 0x5d, 0xc4, 0xf8, 0x2d, 0xa0, 0xae, 0x38, 0x6b, 0x9a, 0xa9, 0xe5, 0x72, 0xf3, 0xe6,
+	0x7d, 0xb3, 0x63, 0x0d, 0xa2, 0x16, 0x8c, 0xb7, 0xc1, 0x63, 0x45, 0xcf, 0x68, 0x7c, 0x4b, 0xcf,
+	0xde, 0xc1, 0x21, 0x55, 0xb0, 0xf8, 0x03, 0x20, 0xd3, 0x8f, 0x5f, 0xc0, 0xaa, 0xb2, 0x43, 0x77,
+	0x2a, 0xd9, 0x05, 0xaf, 0xed, 0x1d, 0xa0, 0x53, 0x27, 0x2a, 0x83, 0x5f, 0xc2, 0x9a, 0x01, 0xcc,
+	0x58, 0xd7, 0xd9, 0x53, 0x22, 0x6a, 0x9a, 0x26, 0x3a, 0x15, 0xbf, 0x03, 0x6f, 0xef, 0xe0, 0x10,
+	0xaf, 0x03, 0x6a, 0x79, 0x37, 0x9f, 0x4a, 0xeb, 0x57, 0x1b, 0xe1, 0x0d, 0xf0, 0x15, 0x5a, 0x69,
+	0x67, 0x9a, 0x91, 0x0a, 0xc7, 0x65, 0xbc, 0x03, 0xbe, 0x95, 0xfa, 0x3e, 0x3e, 0xdf, 0x7f, 0xfc,
+	0xfd, 0x72, 0xe8, 0xfc, 0xbc, 0x1c, 0x3a, 0xbf, 0x2e, 0x87, 0xce, 0xd7, 0xdf, 0xc3, 0x07, 0x39,
+	0xd2, 0xff, 0x81, 0x6f, 0xfe, 0x06, 0x00, 0x00, 0xff, 0xff, 0x5f, 0x75, 0x2e, 0x50, 0x14, 0x05,
+	0x00, 0x00,
 }

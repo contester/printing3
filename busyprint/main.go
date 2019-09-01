@@ -90,4 +90,16 @@ func main() {
 	if err := envconfig.Process("busyprint", &bconf); err != nil {
 		log.Fatal(err)
 	}
+
+	sconf, err := parseStompDSN(bconf.Stomp)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	sconn, err := sconf.Dial()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	
 }

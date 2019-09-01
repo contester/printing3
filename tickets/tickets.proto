@@ -2,29 +2,13 @@ syntax = "proto3";
 
 package tickets;
 
-message Blob {
-    message CompressionInfo {
-        enum CompressionType {
-            METHOD_NONE = 0;
-            METHOD_ZLIB = 1;
-        }
-
-        CompressionType method = 1;
-        uint32 original_size = 2;
-    }
-
-    bytes data = 1;
-    CompressionInfo compression = 2;
-    bytes sha1 = 3;
-};
-
 message PrintJob {
     string filename = 1;
     IdName contest = 2;
     IdName team = 3;
     Computer computer = 4;
     IdName area = 5;
-    Blob data = 6;
+    bytes data = 6;
     uint64 timestamp = 7;
     string printer = 8;
     uint32 job_id = 9;
@@ -33,7 +17,7 @@ message PrintJob {
 
 message BinaryJob {
     string printer = 1;
-    Blob data = 2;
+    bytes data = 2;
     string job_id = 3;
 };
 
