@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/contester/printing3/tools"
 	"github.com/go-stomp/stomp"
 	"github.com/gogo/protobuf/proto"
 	"github.com/kelseyhightower/envconfig"
@@ -59,7 +60,7 @@ func (s *server) processPrintJob(ctx context.Context, msg *stomp.Message) error 
 		return maybeAck(msg)
 	}
 
-	bpb := tpb.BinaryJob{
+	bpb := tpb.TexJob{
 		Printer: job.GetPrinter(),
 		JobId:   job.GetJobId(),
 	}
@@ -76,6 +77,55 @@ func (s *server) processPrintJob(ctx context.Context, msg *stomp.Message) error 
 	return sendAndAck(msg, s.TexQueue, &bpb)
 }
 
+func (s *server) processTexJob(ctx context.Context, msg *stomp.Message) error {
+	var job tpb.TexJob
+
+	err := proto.Unmarshal(msg.Body, &job)
+	if err != nil {
+		log.Errorf("error parsing message %v", msg)
+		return maybeAck(msg)
+	}
+
+	bpb := tpb.BinaryJob{
+		Printer: job.GetPrinter(),
+		JobId:   job.GetJobId(),
+	}
+
+	bpb.Data, err = s.processTex(ctx, bpb.JobId, job.GetData())
+	if err != nil {
+		return sendAndAck(msg, s.FailureQueue, &tpb.PrintJobReport{
+			JobExpandedId:    job.GetJobId(),
+			ErrorMessage:     err.Error(),
+			TimestampSeconds: time.Now().Unix(),
+		})
+	}
+
+	return sendAndAck(msg, s.BinaryQueue, &bpb)
+}
+
+func subscribeAndProcess(ctx context.Context, conn *stomp.Conn, queue string, proc func(context.Context, *stomp.Message) error) (*stomp.Subscription, error) {
+	sub, err := conn.Subscribe(queue, stomp.AckClient)
+	if err != nil {
+		return nil, err
+	}
+
+	go func() {
+		select {
+		case v, ok := <-sub.C:
+			if !ok {
+				log.Fatalf("subscription %q closed", sub)
+			}
+			if err := proc(ctx, v); err != nil {
+				log.Fatalf("proc error: %v", err)
+			}
+		case <-ctx.Done():
+			sub.Unsubscribe()
+			return
+		}
+	}()
+	return sub, nil
+}
+
 type bconfig struct {
 	StompDSN string
 
@@ -85,6 +135,7 @@ type bconfig struct {
 	SourceQueue  string
 	FailureQueue string
 	TexQueue     string
+	BinaryQueue  string
 
 	Languages []string `envconfig:"LANGUAGES"`
 }
@@ -95,18 +146,33 @@ func main() {
 		log.Fatal(err)
 	}
 
-	sconf, err := parseStompDSN(bconf.Stomp)
+	sconf, err := tools.ParseStompDSN(bconf.StompDSN)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	sconn, err := sconf.Dial()
+	ctx := context.Background()
+
+	sconn, err := tools.DialStomp(ctx, sconf)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	sourceSub, err := sconn.Subscribe(bconf.SourceQueue, stomp.AckClient)
+	defer sconn.MustDisconnect()
+
+	srv := server{bconfig: bconf}
+
+	sourceSub, err := subscribeAndProcess(ctx, sconn, bconf.SourceQueue, srv.processPrintJob)
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer sourceSub.Unsubscribe()
+
+	texSub, err := subscribeAndProcess(ctx, sconn, bconf.TexQueue, srv.processTexJob)
+	if err != nil {
+		log.Fatal()
+	}
+	defer texSub.Unsubscribe()
+
+	select {}
 }
