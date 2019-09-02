@@ -9,11 +9,24 @@ message PrintJob {
     Computer computer = 4;
     IdName area = 5;
     bytes data = 6;
-    uint64 timestamp = 7;
+    uint64 timestamp_seconds = 7;
     string printer = 8;
-    uint32 job_id = 9;
+    string job_id = 9;
     string charset = 10;
 };
+
+message PrintJobReport {
+    string job_expanded_id = 1;
+    int64 num_pages = 2;
+    string error_message = 3;
+    int64 timestamp_seconds = 4;
+}
+
+message TexJob {
+    string printer = 1;
+    bytes data = 2;
+    string job_id = 3;
+}
 
 message BinaryJob {
     string printer = 1;

@@ -2,11 +2,10 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"regexp"
-	"strconv"
+	"time"
 
 	"github.com/go-stomp/stomp"
+	"github.com/gogo/protobuf/proto"
 	"github.com/kelseyhightower/envconfig"
 
 	tpb "github.com/contester/printing3/tickets"
@@ -14,75 +13,80 @@ import (
 )
 
 type server struct {
-	SourceWorkDirectory string
-	TexWorkDirectory    string
+	bconfig
 
 	languages map[string]string
 }
 
-func (s *server) processPrintJob(ctx context.Context, job *tpb.PrintJob) error {
-	texSource, err := s.processSource(ctx, *job)
+func maybeAck(msg *stomp.Message) error {
+	if msg.ShouldAck() {
+		return msg.Conn.Ack(msg)
+	}
+	return nil
+}
+
+func sendAndAck(msg *stomp.Message, dest string, data proto.Message) error {
+	buf, err := proto.Marshal(data)
 	if err != nil {
-		return err
+		log.Errorf("error marshaling message %v: %v", data, err)
+		return maybeAck(msg)
+	}
+	if msg.ShouldAck() {
+		tx := msg.Conn.Begin()
+		if err := tx.Send(dest, "application/vnd.google.protobuf", buf, stomp.SendOpt.Header("delivery-mode", "2")); err != nil {
+			log.Errorf("error sending message %v in transaction: %v", data, err)
+			return err
+		}
+		if err := tx.Ack(msg); err != nil {
+			log.Errorf("error acking message in transaction: %v", err)
+			return err
+		}
+		if err := tx.Commit(); err != nil {
+			log.Errorf("error committing transaction: %v", err)
+			return err
+		}
+		return nil
+	}
+	return msg.Conn.Send(dest, "application/vnd.google.protobuf", buf, stomp.SendOpt.Header("delivery-mode", "2"))
+}
+
+func (s *server) processPrintJob(ctx context.Context, msg *stomp.Message) error {
+	var job tpb.PrintJob
+
+	err := proto.Unmarshal(msg.Body, &job)
+	if err != nil {
+		log.Errorf("error parsing message %v", msg)
+		return maybeAck(msg)
 	}
 
-	jobID := "s-" + strconv.FormatUint(uint64(job.GetJobId()), 10)
-
-	dviBinary, err := s.processTex(ctx, jobID, texSource)
-	if err != nil {
-		return err
+	bpb := tpb.BinaryJob{
+		Printer: job.GetPrinter(),
+		JobId:   job.GetJobId(),
 	}
 
+	bpb.Data, err = s.processSource(ctx, &job)
+	if err != nil {
+		return sendAndAck(msg, s.FailureQueue, &tpb.PrintJobReport{
+			JobExpandedId:    job.GetJobId(),
+			ErrorMessage:     err.Error(),
+			TimestampSeconds: time.Now().Unix(),
+		})
+	}
+
+	return sendAndAck(msg, s.TexQueue, &bpb)
 }
 
 type bconfig struct {
-	Stomp string
+	StompDSN string
 
-	SourceWorkDirectory string `envconfig:"SOURCE_DIR"`
-	TexWorkDirectory    string `envconfig:"TEX_DIR"`
+	SourceDir string
+	TexDir    string
+
+	SourceQueue  string
+	FailureQueue string
+	TexQueue     string
 
 	Languages []string `envconfig:"LANGUAGES"`
-}
-
-var dsnPattern = regexp.MustCompile(
-	`^(?:(?P<user>.*?)(?::(?P<passwd>.*))?@)?` + // [user[:password]@]
-		`(?:(?P<net>[^\(]*)(?:\((?P<addr>[^\)]*)\))?)?` + // [net[(addr)]]
-		`\/(?P<vhost>.*?)` + // /dbname
-		`(?:\?(?P<params>[^\?]*))?$`) // [?param1=value1&paramN=valueN]
-
-type stompConfig struct {
-	network, address string
-	opts             []func(*stomp.Conn) error
-}
-
-func (s stompConfig) Dial() (*stomp.Conn, error) {
-	return stomp.Dial(s.network, s.address, s.opts...)
-}
-
-func parseStompDSN(s string) (stompConfig, error) {
-	var result stompConfig
-	m := dsnPattern.FindStringSubmatch(s)
-	if len(m) == 0 {
-		return result, fmt.Errorf("can't parse dsn %q", s)
-	}
-
-	cg := make(map[string]string)
-	cgn := dsnPattern.SubexpNames()
-	for i, v := range m {
-		cg[cgn[i]] = v
-	}
-
-	result.address = cg["addr"]
-	result.network = cg["net"]
-	username := cg["user"]
-	password := cg["passwd"]
-	if username != "" || password != "" {
-		result.opts = append(result.opts, stomp.ConnOpt.Login(username, password))
-	}
-	if vhost := cg["vhost"]; vhost != "" {
-		result.opts = append(result.opts, stomp.ConnOpt.Host(vhost))
-	}
-	return result, nil
 }
 
 func main() {
@@ -101,5 +105,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	
+	sourceSub, err := sconn.Subscribe(bconf.SourceQueue, stomp.AckClient)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

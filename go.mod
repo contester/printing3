@@ -8,7 +8,7 @@ require (
 	github.com/gogo/protobuf v1.1.1
 	github.com/golang/protobuf v1.3.1
 	github.com/jmoiron/sqlx v0.0.0-20180614180643-0dae4fefe7c0
-	github.com/kelseyhightower/envconfig v1.4.0 // indirect
+	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/paulrosania/go-charset v0.0.0-20151028000031-621bb39fcc83
 	github.com/prometheus/common v0.6.0
 	github.com/sirupsen/logrus v1.2.0

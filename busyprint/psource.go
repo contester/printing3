@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	tpb "github.com/contester/printing3/tickets"
@@ -68,7 +67,7 @@ Pages & \pageref{LastPage} \\
 var documentTemplate = template.Must(template.New("source").Parse(documentTemplateString))
 
 type templateData struct {
-	tpb.PrintJob
+	*tpb.PrintJob
 	StyleText, IncludeText string
 }
 
@@ -81,11 +80,11 @@ func texEscape(s string) string {
 	return s
 }
 
-func (s *server) processSource(ctx context.Context, job tpb.PrintJob) ([]byte, error) {
-	jobId := "s-" + strconv.FormatUint(uint64(job.GetJobId()), 10)
+func (s *server) processSource(ctx context.Context, job *tpb.PrintJob) ([]byte, error) {
+	jobID := job.GetJobId()
 	job.Team.Name = texEscape(job.Team.GetName())
 
-	jobDir := filepath.Join(s.SourceWorkDirectory, jobId)
+	jobDir := filepath.Join(s.SourceWorkDirectory, jobID)
 	if err := os.MkdirAll(jobDir, os.ModePerm); err != nil {
 		return nil, err
 	}
@@ -98,9 +97,9 @@ func (s *server) processSource(ctx context.Context, job tpb.PrintJob) ([]byte, e
 		sourceLang = "txt"
 	}
 
-	sourceName := fmt.Sprintf("%s-source.%s", jobId, sourceLang)
-	outputName := fmt.Sprintf("%s-hl.tex", jobId)
-	styleName := fmt.Sprintf("%s-style.sty", jobId)
+	sourceName := fmt.Sprintf("%s-source.%s", jobID, sourceLang)
+	outputName := fmt.Sprintf("%s-hl.tex", jobID)
+	styleName := fmt.Sprintf("%s-style.sty", jobID)
 
 	if err := ioutil.WriteFile(filepath.Join(jobDir, sourceName), job.GetData(), os.ModePerm); err != nil {
 		return nil, err

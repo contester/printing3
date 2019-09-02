@@ -1,11 +1,15 @@
 package tools
 
 import (
+	"context"
 	"flag"
+	"fmt"
+	"net"
 	"regexp"
+	"strings"
 
-	"gopkg.in/gcfg.v1"
 	"github.com/go-stomp/stomp"
+	"gopkg.in/gcfg.v1"
 )
 
 type StompConfig struct {
@@ -63,4 +67,65 @@ func DryRun() bool {
 func ReadConfig() (*GlobalConfig, error) {
 	var gc GlobalConfig
 	return &gc, gcfg.ReadFileInto(&gc, *configFileName)
+}
+
+func ParseStompDSN(s string) (StompConfig, error) {
+	var result StompConfig
+	m := dsnPattern.FindStringSubmatch(s)
+	if len(m) == 0 {
+		return result, fmt.Errorf("can't parse dsn %q", s)
+	}
+
+	cgn := dsnPattern.SubexpNames()
+	for i, v := range m {
+		switch cgn[i] {
+		case "addr":
+			result.Address = v
+		case "net":
+			result.Network = v
+		case "user":
+			result.Username = v
+		case "passwd":
+			result.Username = v
+		case "vhost":
+			result.Vhost = v
+		}
+	}
+
+	if result.Network == "" {
+		result.Network = "tcp"
+	}
+
+	if result.Address == "" {
+		result.Address = "localhost"
+	}
+	if strings.IndexByte(result.Address, ":") == -1 {
+		result.Address += ":61613"
+	}
+
+	return result, nil
+}
+
+func DialStomp(ctx context.Context, cfg StompConfig) (*stomp.Conn, error) {
+	var d net.Dialer
+
+	conn, err := d.DialContext(ctx, cfg.Network, cfg.Address)
+	if err != nil {
+		return nil, err
+	}
+
+	var opts []func(*stomp.Conn) error
+	if cfg.Username != "" {
+		opts = append(opts, stomp.ConnOpt.Login(cfg.Username, cfg.Password))
+	}
+	if cfg.Vhost != "" {
+		opts = append(opts, stomp.ConnOpt.Host(cfg.Vhost))
+	}
+
+	sc, err := stomp.Connect(conn, opts...)
+	if err != nil {
+		conn.Close()
+		return nil, err
+	}
+	return sc, nil
 }
