@@ -91,7 +91,7 @@ func (s *server) processSource(ctx context.Context, job *tpb.PrintJob) ([]byte, 
 
 	sourceLang := filepath.Ext(job.GetFilename())
 	if sourceLang != "" {
-		sourceLang = s.languages[sourceLang[1:]]
+		sourceLang = s.languageMap[sourceLang[1:]]
 	}
 	if sourceLang == "" {
 		sourceLang = "txt"

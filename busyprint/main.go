@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"strings"
 	"time"
 
+	"git.sgu.ru/sgu/systemdutil"
 	"github.com/contester/printing3/tools"
 	"github.com/go-stomp/stomp"
 	"github.com/gogo/protobuf/proto"
@@ -16,7 +18,7 @@ import (
 type server struct {
 	bconfig
 
-	languages map[string]string
+	languageMap map[string]string
 }
 
 func maybeAck(msg *stomp.Message) error {
@@ -137,16 +139,29 @@ type bconfig struct {
 	TexQueue     string
 	BinaryQueue  string
 
-	Languages []string `envconfig:"LANGUAGES"`
+	Languages []string
 }
 
 func main() {
-	var bconf bconfig
-	if err := envconfig.Process("busyprint", &bconf); err != nil {
+	systemdutil.Init()
+
+	var srv server
+	if err := envconfig.Process("busyprint", &srv.bconfig); err != nil {
 		log.Fatal(err)
 	}
 
-	sconf, err := tools.ParseStompDSN(bconf.StompDSN)
+	srv.languageMap = make(map[string]string)
+	for _, v := range srv.Languages {
+		s := strings.SplitN(v, "=", 2)
+		switch len(s) {
+		case 1:
+			v[s[0]] = s[0]
+		case 2:
+			v[s[0]] = s[1]
+		}
+	}
+
+	sconf, err := tools.ParseStompDSN(srv.bconfig.StompDSN)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -160,19 +175,17 @@ func main() {
 
 	defer sconn.MustDisconnect()
 
-	srv := server{bconfig: bconf}
-
-	sourceSub, err := subscribeAndProcess(ctx, sconn, bconf.SourceQueue, srv.processPrintJob)
+	sourceSub, err := subscribeAndProcess(ctx, sconn, srv.SourceQueue, srv.processPrintJob)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer sourceSub.Unsubscribe()
 
-	texSub, err := subscribeAndProcess(ctx, sconn, bconf.TexQueue, srv.processTexJob)
+	texSub, err := subscribeAndProcess(ctx, sconn, srv.TexQueue, srv.processTexJob)
 	if err != nil {
 		log.Fatal()
 	}
 	defer texSub.Unsubscribe()
 
-	select {}
+	systemdutil.WaitSigint()
 }
