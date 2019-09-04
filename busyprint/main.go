@@ -155,9 +155,9 @@ func main() {
 		s := strings.SplitN(v, "=", 2)
 		switch len(s) {
 		case 1:
-			v[s[0]] = s[0]
+			srv.languageMap[s[0]] = s[0]
 		case 2:
-			v[s[0]] = s[1]
+			srv.languageMap[s[0]] = s[1]
 		}
 	}
 
