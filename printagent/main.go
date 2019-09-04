@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"io/ioutil"
 	"os"
@@ -11,12 +10,11 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"github.com/contester/printing3/printserver"
-	"github.com/contester/printing3/tickets"
 	"github.com/contester/printing3/tools"
 	"github.com/go-stomp/stomp"
 	"github.com/golang/protobuf/proto"
 
+	tpb "github.com/contester/printing3/tickets"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -30,23 +28,22 @@ func (s *server) justPrint(printerName, sourceFullName string) error {
 	return cmd.Run()
 }
 
-func (s *server) processIncoming(conn *printserver.ServerConn, msg *stomp.Message) error {
-	var job tickets.BinaryJob
+func (s *server) processIncoming(ctx context.Context, msg *stomp.Message) error {
+	var job tpb.BinaryJob
 	if err := proto.Unmarshal(msg.Body, &job); err != nil {
 		log.Errorf("Received malformed job: %s", err)
-		return err
+		return tools.MaybeAck(msg)
 	}
 
 	sourceName := time.Now().Format("2006-01-02T15-04-05") + "-" + job.GetJobId() + ".ps"
 	sourceFullName := filepath.Join(s.Workdir, sourceName)
-	if buf, err := job.Data.Bytes(); err == nil {
-		if err = ioutil.WriteFile(sourceFullName, buf, os.ModePerm); err != nil {
-			log.Errorf("Error writing file: %s", err)
-			return err
-		}
-	} else {
-		log.Errorf("Error getting buffer: %s", err)
-		return err
+	if err := ioutil.WriteFile(sourceFullName, job.GetData(), os.ModePerm); err != nil {
+		log.Errorf("Error writing file: %s", err)
+		return tools.SendAndAck(msg, s.FailureQueue, &tpb.PrintJobReport{
+			JobExpandedId:    job.GetJobId(),
+			ErrorMessage:     err.Error(),
+			TimestampSeconds: time.Now().Unix(),
+		})
 	}
 
 	log.Infof("Sending job %s to printer %s", job.GetJobId(), job.GetPrinter())
@@ -56,25 +53,24 @@ func (s *server) processIncoming(conn *printserver.ServerConn, msg *stomp.Messag
 	} else {
 		err = s.justPrint(job.GetPrinter(), sourceFullName)
 	}
+
+	rpb := tpb.PrintJobReport{
+		JobExpandedId:    job.GetJobId(),
+		TimestampSeconds: time.Now().Unix(),
+	}
+
 	if err != nil {
 		log.Errorf("Error printing: %s", err)
-		return err
+		rpb.ErrorMessage = err.Error()
 	}
 
-	type printDone struct {
-		ID string `json:"id"`
-	}
-
-	outbuf, err := json.Marshal(printDone{ID: job.GetJobId()})
-	if err != nil {
-		return nil
-	}
-	return conn.SendContents(outbuf, "application/json")
+	return tools.SendAndAck(msg, s.FailureQueue, &rpb)
 }
 
 type sconfig struct {
-	Workdir, Gsprint string
-	StompDSN         string
+	Workdir, Gsprint          string
+	StompDSN                  string
+	BinaryQueue, FailureQueue string
 }
 
 var (
@@ -101,22 +97,11 @@ func main() {
 	}
 	defer conn.MustDisconnect()
 
-	
-
-
-	pserver := printserver.Server{
-		Source:      "/amq/queue/printer",
-		Destination: "/amq/queue/finished_printing",
-		StompConfig: &config.Messaging,
+	sub, err := tools.SubscribeAndProcess(ctx, conn, srv.BinaryQueue, srv.processIncoming)
+	if err != nil {
+		log.Fatal(err)
 	}
+	defer sub.Unsubscribe()
 
-	srv := server{
-		Gsprint: "gsprint.exe",
-		Workdir: config.Workdirs.Printer,
-	}
-
-	for {
-		pserver.Process(srv.processIncoming)
-		time.Sleep(15 * time.Second)
-	}
+	select {}
 }

@@ -21,45 +21,13 @@ type server struct {
 	languageMap map[string]string
 }
 
-func maybeAck(msg *stomp.Message) error {
-	if msg.ShouldAck() {
-		return msg.Conn.Ack(msg)
-	}
-	return nil
-}
-
-func sendAndAck(msg *stomp.Message, dest string, data proto.Message) error {
-	buf, err := proto.Marshal(data)
-	if err != nil {
-		log.Errorf("error marshaling message %v: %v", data, err)
-		return maybeAck(msg)
-	}
-	if msg.ShouldAck() {
-		tx := msg.Conn.Begin()
-		if err := tx.Send(dest, "application/vnd.google.protobuf", buf, stomp.SendOpt.Header("delivery-mode", "2")); err != nil {
-			log.Errorf("error sending message %v in transaction: %v", data, err)
-			return err
-		}
-		if err := tx.Ack(msg); err != nil {
-			log.Errorf("error acking message in transaction: %v", err)
-			return err
-		}
-		if err := tx.Commit(); err != nil {
-			log.Errorf("error committing transaction: %v", err)
-			return err
-		}
-		return nil
-	}
-	return msg.Conn.Send(dest, "application/vnd.google.protobuf", buf, stomp.SendOpt.Header("delivery-mode", "2"))
-}
-
 func (s *server) processPrintJob(ctx context.Context, msg *stomp.Message) error {
 	var job tpb.PrintJob
 
 	err := proto.Unmarshal(msg.Body, &job)
 	if err != nil {
 		log.Errorf("error parsing message %v", msg)
-		return maybeAck(msg)
+		return tools.MaybeAck(msg)
 	}
 
 	bpb := tpb.TexJob{
@@ -69,14 +37,14 @@ func (s *server) processPrintJob(ctx context.Context, msg *stomp.Message) error 
 
 	bpb.Data, err = s.processSource(ctx, &job)
 	if err != nil {
-		return sendAndAck(msg, s.FailureQueue, &tpb.PrintJobReport{
+		return tools.SendAndAck(msg, s.FailureQueue, &tpb.PrintJobReport{
 			JobExpandedId:    job.GetJobId(),
 			ErrorMessage:     err.Error(),
 			TimestampSeconds: time.Now().Unix(),
 		})
 	}
 
-	return sendAndAck(msg, s.TexQueue, &bpb)
+	return tools.SendAndAck(msg, s.TexQueue, &bpb)
 }
 
 func (s *server) processTexJob(ctx context.Context, msg *stomp.Message) error {
@@ -85,7 +53,7 @@ func (s *server) processTexJob(ctx context.Context, msg *stomp.Message) error {
 	err := proto.Unmarshal(msg.Body, &job)
 	if err != nil {
 		log.Errorf("error parsing message %v", msg)
-		return maybeAck(msg)
+		return tools.MaybeAck(msg)
 	}
 
 	bpb := tpb.BinaryJob{
@@ -95,37 +63,14 @@ func (s *server) processTexJob(ctx context.Context, msg *stomp.Message) error {
 
 	bpb.Data, err = s.processTex(ctx, bpb.JobId, job.GetData())
 	if err != nil {
-		return sendAndAck(msg, s.FailureQueue, &tpb.PrintJobReport{
+		return tools.SendAndAck(msg, s.FailureQueue, &tpb.PrintJobReport{
 			JobExpandedId:    job.GetJobId(),
 			ErrorMessage:     err.Error(),
 			TimestampSeconds: time.Now().Unix(),
 		})
 	}
 
-	return sendAndAck(msg, s.BinaryQueue, &bpb)
-}
-
-func subscribeAndProcess(ctx context.Context, conn *stomp.Conn, queue string, proc func(context.Context, *stomp.Message) error) (*stomp.Subscription, error) {
-	sub, err := conn.Subscribe(queue, stomp.AckClient)
-	if err != nil {
-		return nil, err
-	}
-
-	go func() {
-		select {
-		case v, ok := <-sub.C:
-			if !ok {
-				log.Fatalf("subscription %q closed", sub)
-			}
-			if err := proc(ctx, v); err != nil {
-				log.Fatalf("proc error: %v", err)
-			}
-		case <-ctx.Done():
-			sub.Unsubscribe()
-			return
-		}
-	}()
-	return sub, nil
+	return tools.SendAndAck(msg, s.BinaryQueue, &bpb)
 }
 
 type bconfig struct {
@@ -175,13 +120,13 @@ func main() {
 
 	defer sconn.MustDisconnect()
 
-	sourceSub, err := subscribeAndProcess(ctx, sconn, srv.SourceQueue, srv.processPrintJob)
+	sourceSub, err := tools.SubscribeAndProcess(ctx, sconn, srv.SourceQueue, srv.processPrintJob)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer sourceSub.Unsubscribe()
 
-	texSub, err := subscribeAndProcess(ctx, sconn, srv.TexQueue, srv.processTexJob)
+	texSub, err := tools.SubscribeAndProcess(ctx, sconn, srv.TexQueue, srv.processTexJob)
 	if err != nil {
 		log.Fatal()
 	}
