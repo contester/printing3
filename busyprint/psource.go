@@ -84,7 +84,7 @@ func (s *server) processSource(ctx context.Context, job *tpb.PrintJob) ([]byte, 
 	jobID := job.GetJobId()
 	job.Team.Name = texEscape(job.Team.GetName())
 
-	jobDir := filepath.Join(s.SourceWorkDirectory, jobID)
+	jobDir := filepath.Join(s.SourceDir, jobID)
 	if err := os.MkdirAll(jobDir, os.ModePerm); err != nil {
 		return nil, err
 	}
@@ -99,7 +99,6 @@ func (s *server) processSource(ctx context.Context, job *tpb.PrintJob) ([]byte, 
 
 	sourceName := fmt.Sprintf("%s-source.%s", jobID, sourceLang)
 	outputName := fmt.Sprintf("%s-hl.tex", jobID)
-	styleName := fmt.Sprintf("%s-style.sty", jobID)
 
 	if err := ioutil.WriteFile(filepath.Join(jobDir, sourceName), job.GetData(), os.ModePerm); err != nil {
 		return nil, err
@@ -117,9 +116,9 @@ func (s *server) processSource(ctx context.Context, job *tpb.PrintJob) ([]byte, 
 		return nil, err
 	}
 
-	cmd = exec.Command("pygmentize", "-f", "latex", "-S", "bw", "-o", styleName)
-	cmd.Dir, cmd.Stdin, cmd.Stdout, cmd.Stderr = jobDir, os.Stdin, os.Stdout, os.Stderr
-	if err := cmd.Run(); err != nil {
+	cmd = exec.Command("pygmentize", "-f", "latex", "-S", "bw")
+	styleBytes, err := cmd.Output()
+	if err != nil {
 		return nil, err
 	}
 
@@ -133,11 +132,7 @@ func (s *server) processSource(ctx context.Context, job *tpb.PrintJob) ([]byte, 
 		return nil, err
 	}
 	data.IncludeText = string(bs)
-	bs, err = ioutil.ReadFile(filepath.Join(jobDir, styleName))
-	if err != nil {
-		return nil, err
-	}
-	data.StyleText = string(bs)
+	data.StyleText = string(styleBytes)
 
 	var output bytes.Buffer
 	if err = documentTemplate.Execute(&output, &data); err != nil {

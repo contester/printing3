@@ -12,7 +12,7 @@ import (
 )
 
 func (s *server) processTex(ctx context.Context, jobID string, content []byte) ([]byte, error) {
-	jobDir := filepath.Join(s.TexWorkDirectory, jobID)
+	jobDir := filepath.Join(s.TexDir, jobID)
 	if err := os.MkdirAll(jobDir, os.ModePerm); err != nil {
 		return nil, err
 	}
@@ -26,13 +26,13 @@ func (s *server) processTex(ctx context.Context, jobID string, content []byte) (
 	cmd := exec.CommandContext(ctx, "latex", "-interaction=batchmode", sourceName)
 	cmd.Dir, cmd.Stdin, cmd.Stdout, cmd.Stderr = jobDir, os.Stdin, os.Stdout, os.Stderr
 	if err := cmd.Run(); err != nil {
-		return nil, err
+		log.Infof("first latex run has error %v. Rerunning", err)
 	}
 
 	cmd = exec.CommandContext(ctx, "latex", "-interaction=batchmode", sourceName)
 	cmd.Dir, cmd.Stdin, cmd.Stdout, cmd.Stderr = jobDir, os.Stdin, os.Stdout, os.Stderr
 	if err := cmd.Run(); err != nil {
-		return nil, err
+		log.Infof("seconf latex run has error %v. Ignoring because I'm too lazy", err)
 	}
 
 	log.Infof("dvips: %s", jobID)

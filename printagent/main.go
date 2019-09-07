@@ -48,7 +48,7 @@ func (s *server) processIncoming(ctx context.Context, msg *stomp.Message) error 
 
 	log.Infof("Sending job %s to printer %s", job.GetJobId(), job.GetPrinter())
 	var err error
-	if tools.DryRun() {
+	if *dryRun {
 		log.Infof("Would run: %q %s %q %q", s.Gsprint, "-printer", job.GetPrinter(), sourceFullName)
 	} else {
 		err = s.justPrint(job.GetPrinter(), sourceFullName)
@@ -75,6 +75,7 @@ type sconfig struct {
 
 var (
 	configFile = flag.String("config", "config.toml", "Config file")
+	dryRun     = flag.Bool("dry_run", false, "dry run")
 )
 
 func main() {

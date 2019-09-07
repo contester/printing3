@@ -111,6 +111,8 @@ func main() {
 		log.Fatal(err)
 	}
 
+	log.Infof("dsn: %v", sconf)
+
 	ctx := context.Background()
 
 	sconn, err := tools.DialStomp(ctx, sconf)
