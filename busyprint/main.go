@@ -7,6 +7,7 @@ import (
 
 	"git.sgu.ru/sgu/systemdutil"
 	"github.com/contester/printing3/tools"
+	"github.com/coreos/go-systemd/daemon"
 	"github.com/go-stomp/stomp"
 	"github.com/gogo/protobuf/proto"
 	"github.com/kelseyhightower/envconfig"
@@ -111,10 +112,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	log.Infof("dsn: %v", sconf)
-
 	ctx := context.Background()
-
 	sconn, err := tools.DialStomp(ctx, sconf)
 	if err != nil {
 		log.Fatal(err)
@@ -133,6 +131,7 @@ func main() {
 		log.Fatal()
 	}
 	defer texSub.Unsubscribe()
-
+	daemon.SdNotify(false, daemon.SdNotifyReady)
 	systemdutil.WaitSigint()
+	daemon.SdNotify(false, daemon.SdNotifyStopping)
 }
