@@ -48,17 +48,19 @@ func SubscribeAndProcess(ctx context.Context, conn *stomp.Conn, queue string, pr
 	}
 
 	go func() {
-		select {
-		case v, ok := <-sub.C:
-			if !ok {
-				log.Fatalf("subscription %q closed", sub)
+		for {
+			select {
+			case v, ok := <-sub.C:
+				if !ok {
+					log.Fatalf("subscription %q closed", sub)
+				}
+				if err := proc(ctx, v); err != nil {
+					log.Fatalf("proc error: %v", err)
+				}
+			case <-ctx.Done():
+				sub.Unsubscribe()
+				return
 			}
-			if err := proc(ctx, v); err != nil {
-				log.Fatalf("proc error: %v", err)
-			}
-		case <-ctx.Done():
-			sub.Unsubscribe()
-			return
 		}
 	}()
 	return sub, nil
