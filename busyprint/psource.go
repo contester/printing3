@@ -4,18 +4,18 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"html/template"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"text/template"
 
 	tpb "github.com/contester/printing3/tickets"
 )
 
 const documentTemplateString = `\documentclass[12pt,a4paper,oneside]{article}
-\usepackage[cp1251]{inputenc}
+\usepackage[utf8]{inputenc}
 \usepackage[english,russian]{babel}
 \usepackage{fancyhdr}
 \usepackage{fancyvrb}
@@ -69,6 +69,7 @@ var documentTemplate = template.Must(template.New("source").Parse(documentTempla
 type templateData struct {
 	*tpb.PrintJob
 	StyleText, IncludeText string
+	Encoding               string
 }
 
 func texEscape(s string) string {
@@ -109,7 +110,7 @@ func (s *server) processSource(ctx context.Context, job *tpb.PrintJob) ([]byte, 
 		sourceCharset = "cp1251"
 	}
 
-	args := []string{"-l", "text", "-f", "latex", "-O", "linenos=1,tabsize=4,encoding=" + sourceCharset, "-o", outputName, sourceName}
+	args := []string{"-l", "text", "-f", "latex", "-O", "linenos=1,tabsize=4,outencoding=utf8,encoding=" + sourceCharset, "-o", outputName, sourceName}
 	cmd := exec.Command("pygmentize", args...)
 	cmd.Dir, cmd.Stdin, cmd.Stdout, cmd.Stderr = jobDir, os.Stdin, os.Stdout, os.Stderr
 	if err := cmd.Run(); err != nil {
