@@ -12,7 +12,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/contester/printing3/tools"
 	"github.com/go-stomp/stomp"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	tpb "github.com/contester/printing3/tickets"
 	log "github.com/sirupsen/logrus"
@@ -57,6 +57,7 @@ func (s *server) processIncoming(ctx context.Context, msg *stomp.Message) error 
 	rpb := tpb.PrintJobReport{
 		JobExpandedId:    job.GetJobId(),
 		TimestampSeconds: time.Now().Unix(),
+		NumPages:         job.GetPages(),
 	}
 
 	if err != nil {

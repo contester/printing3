@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/go-stomp/stomp"
-	"github.com/gogo/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -55,7 +55,7 @@ func SubscribeAndProcess(ctx context.Context, conn *stomp.Conn, queue string, pr
 					log.Fatalf("subscription %q closed", sub)
 				}
 				if err := proc(ctx, v); err != nil {
-					log.Fatalf("proc error: %v", err)
+					log.Fatalf("process error: %v", err)
 				}
 			case <-ctx.Done():
 				sub.Unsubscribe()

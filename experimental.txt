@@ -1,0 +1,68 @@
+const printQuery = `select
+p.id job_id, p.filename, p.contest contest_id,
+c.name contest_name, p.team team_id,
+s.full_name school_name, t.num team_num,
+host(p.computer_id) computer_id,
+cl.name computer_name,
+a.id area_id, a.name as area_name, a.printer, p.data, p.arrived
+from print_jobs p, contests c, areas a, participants pa, teams t, schools s, computer_locations cl
+where
+c.id = pa.contest and c.id = p.contest and cl.id = p.computer_id and
+t.id = pa.team and t.school = s.id and a.id = cl.location and
+pa.team = p.team and p.id = $1
+`
+
+type printQueryData struct {
+	JobID        int64     `db:"job_id"`
+	Filename     string    `db:"filename"`
+	ContestID    int64     `db:"contest_id"`
+	ContestName  string    `db:"contest_name"`
+	TeamID       int64     `db:"team_id"`
+	SchoolName   string    `db:"school_name"`
+	TeamNum      int64     `db:"team_num"`
+	ComputerID   string    `db:"computer_id"`
+	ComputerName string    `db:"computer_name"`
+	AreaID       int64     `db:"area_id"`
+	AreaName     string    `db:"area_name"`
+	Printer      string    `db:"printer"`
+	Data         []byte    `db:"data"`
+	Arrived      time.Time `db:"arrived"`
+}
+
+func (s *server) processPush(ctx context.Context, msg *stomp.Message) error {
+	var tjob struct {
+		Id int32 `json:"id"`
+	}
+
+	err := json.Unmarshal(msg.Body, &tjob)
+	if err != nil {
+		log.Errorf("error parsing message %v", msg)
+		return tools.MaybeAck(msg)
+	}
+
+	var job printQueryData
+
+	if err := pgxscan.Get(ctx, s.dbpool, &job, printQuery, tjob.Id); err != nil {
+		log.Errorf("error scanning: %v", err)
+		return tools.MaybeAck(msg)
+	}
+
+	result := tpb.PrintJob{
+		JobId:            strconv.FormatInt(job.JobID, 10),
+		Filename:         job.Filename,
+		Printer:          job.Printer,
+		Computer:         &tickets.Computer{Id: job.ComputerID, Name: job.ComputerName},
+		Contest:          &tickets.IdName{Id: uint32(job.ContestID), Name: job.ContestName},
+		Area:             &tickets.IdName{Id: uint32(job.AreaID), Name: job.AreaName},
+		Charset:          "windows-1251",
+		Team:             &tickets.IdName{Id: uint32(job.TeamID), Name: job.SchoolName},
+		TimestampSeconds: uint64(job.Arrived.UnixNano()) / 1000,
+		Data:             job.Data,
+	}
+
+	if job.TeamNum > 0 {
+		result.Team.Name = result.GetTeam().GetName() + " #" + strconv.FormatInt(job.TeamNum, 10)
+	}
+
+	return tools.SendAndAck(msg, s.SourceQueue, &result)
+}
