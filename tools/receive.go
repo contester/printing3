@@ -52,7 +52,7 @@ func SubscribeAndProcess(ctx context.Context, conn *stomp.Conn, queue string, pr
 			select {
 			case v, ok := <-sub.C:
 				if !ok {
-					log.Fatalf("subscription %q closed", sub)
+					log.Fatalf("subscription %q closed", sub.Id())
 				}
 				if err := proc(ctx, v); err != nil {
 					log.Fatalf("process error: %v", err)

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -37,7 +36,7 @@ func (s *server) processIncoming(ctx context.Context, msg *stomp.Message) error 
 
 	sourceName := time.Now().Format("2006-01-02T15-04-05") + "-" + job.GetJobId() + ".ps"
 	sourceFullName := filepath.Join(s.Workdir, sourceName)
-	if err := ioutil.WriteFile(sourceFullName, job.GetData(), os.ModePerm); err != nil {
+	if err := os.WriteFile(sourceFullName, job.GetData(), os.ModePerm); err != nil {
 		log.Errorf("Error writing file: %s", err)
 		return tools.SendAndAck(msg, s.FailureQueue, &tpb.PrintJobReport{
 			JobExpandedId:    job.GetJobId(),

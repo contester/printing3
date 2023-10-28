@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -101,7 +100,7 @@ func (s *server) processSource(ctx context.Context, job *tpb.PrintJob) ([]byte, 
 	sourceName := fmt.Sprintf("%s-source.%s", jobID, sourceLang)
 	outputName := fmt.Sprintf("%s-hl.tex", jobID)
 
-	if err := ioutil.WriteFile(filepath.Join(jobDir, sourceName), job.GetData(), os.ModePerm); err != nil {
+	if err := os.WriteFile(filepath.Join(jobDir, sourceName), job.GetData(), os.ModePerm); err != nil {
 		return nil, err
 	}
 
@@ -128,7 +127,7 @@ func (s *server) processSource(ctx context.Context, job *tpb.PrintJob) ([]byte, 
 		PrintJob: job,
 	}
 
-	bs, err := ioutil.ReadFile(filepath.Join(jobDir, outputName))
+	bs, err := os.ReadFile(filepath.Join(jobDir, outputName))
 	if err != nil {
 		return nil, err
 	}

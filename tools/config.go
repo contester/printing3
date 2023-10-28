@@ -51,7 +51,7 @@ func ParseStompDSN(s string) (StompConfig, error) {
 	if result.Address == "" {
 		result.Address = "localhost"
 	}
-	if strings.Index(result.Address, ":") == -1 {
+	if !strings.Contains(result.Address, ":") {
 		result.Address += ":61613"
 	}
 

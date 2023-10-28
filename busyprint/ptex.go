@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -23,7 +22,7 @@ func (s *server) processTex(ctx context.Context, jobID string, content []byte) (
 
 	sourceName := fmt.Sprintf("%s.tex", jobID)
 
-	if err := ioutil.WriteFile(filepath.Join(jobDir, sourceName), content, os.ModePerm); err != nil {
+	if err := os.WriteFile(filepath.Join(jobDir, sourceName), content, os.ModePerm); err != nil {
 		return nil, 0, err
 	}
 
@@ -70,6 +69,6 @@ func (s *server) processTex(ctx context.Context, jobID string, content []byte) (
 	}
 
 	psName := fmt.Sprintf("%s.ps", jobID)
-	data, err := ioutil.ReadFile(filepath.Join(jobDir, psName))
+	data, err := os.ReadFile(filepath.Join(jobDir, psName))
 	return data, pages, err
 }
