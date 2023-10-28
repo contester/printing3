@@ -12,7 +12,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/contester/printing3/tools"
 	"github.com/go-stomp/stomp"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	tpb "github.com/contester/printing3/tickets"
 	log "github.com/sirupsen/logrus"
@@ -48,7 +48,7 @@ func (s *server) processIncoming(ctx context.Context, msg *stomp.Message) error 
 
 	log.Infof("Sending job %s to printer %s", job.GetJobId(), job.GetPrinter())
 	var err error
-	if tools.DryRun() {
+	if *dryRun {
 		log.Infof("Would run: %q %s %q %q", s.Gsprint, "-printer", job.GetPrinter(), sourceFullName)
 	} else {
 		err = s.justPrint(job.GetPrinter(), sourceFullName)
@@ -57,6 +57,7 @@ func (s *server) processIncoming(ctx context.Context, msg *stomp.Message) error 
 	rpb := tpb.PrintJobReport{
 		JobExpandedId:    job.GetJobId(),
 		TimestampSeconds: time.Now().Unix(),
+		NumPages:         job.GetPages(),
 	}
 
 	if err != nil {
@@ -75,6 +76,7 @@ type sconfig struct {
 
 var (
 	configFile = flag.String("config", "config.toml", "Config file")
+	dryRun     = flag.Bool("dry_run", false, "dry run")
 )
 
 func main() {

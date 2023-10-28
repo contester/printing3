@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package tickets;
 
+option go_package = "github.com/contester/printing3/tickets";
+
 message PrintJob {
     string filename = 1;
     IdName contest = 2;
@@ -32,6 +34,7 @@ message BinaryJob {
     string printer = 1;
     bytes data = 2;
     string job_id = 3;
+    int64 pages = 4;
 };
 
 message IdName {

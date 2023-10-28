@@ -5,11 +5,12 @@ import (
 	"strings"
 	"time"
 
-	"git.sgu.ru/sgu/systemdutil"
 	"github.com/contester/printing3/tools"
+	"github.com/coreos/go-systemd/v22/daemon"
 	"github.com/go-stomp/stomp"
-	"github.com/gogo/protobuf/proto"
 	"github.com/kelseyhightower/envconfig"
+	"google.golang.org/protobuf/proto"
+	"stingr.net/go/systemdutil"
 
 	tpb "github.com/contester/printing3/tickets"
 	log "github.com/sirupsen/logrus"
@@ -26,7 +27,7 @@ func (s *server) processPrintJob(ctx context.Context, msg *stomp.Message) error 
 
 	err := proto.Unmarshal(msg.Body, &job)
 	if err != nil {
-		log.Errorf("error parsing message %v", msg)
+		log.Errorf("error parsing print job %+v", msg)
 		return tools.MaybeAck(msg)
 	}
 
@@ -52,7 +53,7 @@ func (s *server) processTexJob(ctx context.Context, msg *stomp.Message) error {
 
 	err := proto.Unmarshal(msg.Body, &job)
 	if err != nil {
-		log.Errorf("error parsing message %v", msg)
+		log.Errorf("error parsing tex job %+v", msg)
 		return tools.MaybeAck(msg)
 	}
 
@@ -61,7 +62,7 @@ func (s *server) processTexJob(ctx context.Context, msg *stomp.Message) error {
 		JobId:   job.GetJobId(),
 	}
 
-	bpb.Data, err = s.processTex(ctx, bpb.JobId, job.GetData())
+	bpb.Data, bpb.Pages, err = s.processTex(ctx, bpb.JobId, job.GetData())
 	if err != nil {
 		return tools.SendAndAck(msg, s.FailureQueue, &tpb.PrintJobReport{
 			JobExpandedId:    job.GetJobId(),
@@ -112,7 +113,6 @@ func main() {
 	}
 
 	ctx := context.Background()
-
 	sconn, err := tools.DialStomp(ctx, sconf)
 	if err != nil {
 		log.Fatal(err)
@@ -131,6 +131,7 @@ func main() {
 		log.Fatal()
 	}
 	defer texSub.Unsubscribe()
-
+	daemon.SdNotify(false, daemon.SdNotifyReady)
+	defer daemon.SdNotify(false, daemon.SdNotifyStopping)
 	systemdutil.WaitSigint()
 }

@@ -2,14 +2,12 @@ package tools
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"net"
 	"regexp"
 	"strings"
 
 	"github.com/go-stomp/stomp"
-	"gopkg.in/gcfg.v1"
 )
 
 type StompConfig struct {
@@ -17,57 +15,11 @@ type StompConfig struct {
 	Params                                      map[string]string
 }
 
-type StompConnector interface {
-	NewConnection() (*stomp.Conn, error)
-}
-
-func (s *StompConfig) NewConnection() (*stomp.Conn, error) {
-	var opts []func(*stomp.Conn) error
-	network := s.Network
-	if network == "" {
-		network = "tcp"
-	}
-	if s.Username != "" {
-		opts = append(opts, stomp.ConnOpt.Login(s.Username, s.Password))
-	}
-	if s.Vhost != "" {
-		opts = append(opts, stomp.ConnOpt.Host(s.Vhost))
-	}
-	return stomp.Dial(network, s.Address, opts...)
-}
-
 var dsnPattern = regexp.MustCompile(
 	`^(?:(?P<user>.*?)(?::(?P<passwd>.*))?@)?` + // [user[:password]@]
 		`(?:(?P<net>[^\(]*)(?:\((?P<addr>[^\)]*)\))?)?` + // [net[(addr)]]
 		`\/(?P<vhost>.*?)` + // /dbname
 		`(?:\?(?P<params>[^\?]*))?$`) // [?param1=value1&paramN=valueN]
-
-type GlobalConfig struct {
-	Server struct {
-		Db string
-	}
-	Messaging StompConfig
-	Workdirs  struct {
-		TexProcessor    string `gcfg:"tex-processor"`
-		SourceProcessor string `gcfg:"source-processor"`
-		Printer         string `gcfg:"printer"`
-	}
-	Languages map[string]*struct{ Ext string }
-}
-
-var (
-	configFileName = flag.String("config", "", "Config file path")
-	dryRun         = flag.Bool("dry_run", false, "Dry run")
-)
-
-func DryRun() bool {
-	return *dryRun
-}
-
-func ReadConfig() (*GlobalConfig, error) {
-	var gc GlobalConfig
-	return &gc, gcfg.ReadFileInto(&gc, *configFileName)
-}
 
 func ParseStompDSN(s string) (StompConfig, error) {
 	var result StompConfig
@@ -86,7 +38,7 @@ func ParseStompDSN(s string) (StompConfig, error) {
 		case "user":
 			result.Username = v
 		case "passwd":
-			result.Username = v
+			result.Password = v
 		case "vhost":
 			result.Vhost = v
 		}
@@ -99,7 +51,7 @@ func ParseStompDSN(s string) (StompConfig, error) {
 	if result.Address == "" {
 		result.Address = "localhost"
 	}
-	if strings.IndexByte(result.Address, ":") == -1 {
+	if strings.Index(result.Address, ":") == -1 {
 		result.Address += ":61613"
 	}
 
