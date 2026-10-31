@@ -9,6 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+	"unicode"
+
+	"google.golang.org/protobuf/proto"
 
 	tpb "github.com/contester/printing3/tickets"
 )
@@ -71,18 +74,54 @@ type templateData struct {
 	Encoding               string
 }
 
+var texReplacer = strings.NewReplacer(
+	`\`, `\textbackslash{}`,
+	`{`, `\{`,
+	`}`, `\}`,
+	`#`, `\#`,
+	`$`, `\$`,
+	`%`, `\%`,
+	`&`, `\&`,
+	`_`, `\_`,
+	`~`, `\textasciitilde{}`,
+	`^`, `\textasciicircum{}`,
+)
+
+// texEscape makes s safe to put into running text of a TeX document.
+// Control characters (including newlines) are replaced by spaces.
 func texEscape(s string) string {
-	s = strings.Replace(s, "%", "\\%", -1)
-	s = strings.Replace(s, "$", "\\$", -1)
-	s = strings.Replace(s, "_", "\\_", -1)
-	s = strings.Replace(s, "{", "\\{", -1)
-	s = strings.Replace(s, "#", "\\#", -1)
-	return s
+	s = strings.Map(func(r rune) rune {
+		if unicode.IsControl(r) {
+			return ' '
+		}
+		return r
+	}, s)
+	return texReplacer.Replace(s)
+}
+
+// escapedJob returns a copy of job with every string that ends up in the
+// document template escaped. The original job is not modified.
+func escapedJob(job *tpb.PrintJob) *tpb.PrintJob {
+	j := proto.Clone(job).(*tpb.PrintJob)
+	j.Filename = texEscape(j.GetFilename())
+	if j.Team != nil {
+		j.Team.Name = texEscape(j.Team.Name)
+	}
+	if j.Contest != nil {
+		j.Contest.Name = texEscape(j.Contest.Name)
+	}
+	if j.Area != nil {
+		j.Area.Name = texEscape(j.Area.Name)
+	}
+	if j.Computer != nil {
+		j.Computer.Id = texEscape(j.Computer.Id)
+		j.Computer.Name = texEscape(j.Computer.Name)
+	}
+	return j
 }
 
 func (s *server) processSource(ctx context.Context, job *tpb.PrintJob) ([]byte, error) {
 	jobID := job.GetJobId()
-	job.Team.Name = texEscape(job.Team.GetName())
 
 	jobDir := filepath.Join(s.SourceDir, jobID)
 	if err := os.MkdirAll(jobDir, os.ModePerm); err != nil {
@@ -122,9 +161,8 @@ func (s *server) processSource(ctx context.Context, job *tpb.PrintJob) ([]byte, 
 		return nil, err
 	}
 
-	job.Filename = texEscape(job.GetFilename())
 	data := templateData{
-		PrintJob: job,
+		PrintJob: escapedJob(job),
 	}
 
 	bs, err := os.ReadFile(filepath.Join(jobDir, outputName))

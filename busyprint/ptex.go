@@ -14,6 +14,16 @@ import (
 
 var pagesRe = regexp.MustCompile(`^*.dvi: (\d+) page`)
 
+// latexCmd builds a latex invocation that can't run external commands.
+// Reading arbitrary files is NOT prevented here (openin_any=p was tested and
+// does not block absolute paths); that relies on texEscape for all inputs.
+func latexCmd(ctx context.Context, jobDir, sourceName string) *exec.Cmd {
+	cmd := exec.CommandContext(ctx, "latex", "-no-shell-escape", "-interaction=batchmode", sourceName)
+	cmd.Dir, cmd.Stdin, cmd.Stdout, cmd.Stderr = jobDir, os.Stdin, os.Stdout, os.Stderr
+	cmd.Env = append(os.Environ(), "openout_any=p", "shell_escape=f")
+	return cmd
+}
+
 func (s *server) processTex(ctx context.Context, jobID string, content []byte) ([]byte, int64, error) {
 	jobDir := filepath.Join(s.TexDir, jobID)
 	if err := os.MkdirAll(jobDir, os.ModePerm); err != nil {
@@ -26,14 +36,12 @@ func (s *server) processTex(ctx context.Context, jobID string, content []byte) (
 		return nil, 0, err
 	}
 
-	cmd := exec.CommandContext(ctx, "latex", "-interaction=batchmode", sourceName)
-	cmd.Dir, cmd.Stdin, cmd.Stdout, cmd.Stderr = jobDir, os.Stdin, os.Stdout, os.Stderr
+	cmd := latexCmd(ctx, jobDir, sourceName)
 	if err := cmd.Run(); err != nil {
 		log.Infof("first latex run has error %v. Rerunning", err)
 	}
 
-	cmd = exec.CommandContext(ctx, "latex", "-interaction=batchmode", sourceName)
-	cmd.Dir, cmd.Stdin, cmd.Stdout, cmd.Stderr = jobDir, os.Stdin, os.Stdout, os.Stderr
+	cmd = latexCmd(ctx, jobDir, sourceName)
 	if err := cmd.Run(); err != nil {
 		log.Infof("seconf latex run has error %v. Ignoring because I'm too lazy", err)
 	}
