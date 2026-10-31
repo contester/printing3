@@ -128,7 +128,7 @@ func main() {
 
 	texSub, err := tools.SubscribeAndProcess(ctx, sconn, srv.TexQueue, srv.processTexJob)
 	if err != nil {
-		log.Fatal()
+		log.Fatal(err)
 	}
 	defer texSub.Unsubscribe()
 	daemon.SdNotify(false, daemon.SdNotifyReady)
