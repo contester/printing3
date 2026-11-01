@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"golang.org/x/text/encoding/charmap"
+
 	tpb "github.com/contester/printing3/tickets"
 )
 
@@ -67,5 +69,44 @@ func TestPipelineHostileFilename(t *testing.T) {
 	}
 	if strings.Contains(string(ps), "TOPSECRET") {
 		t.Error("file inclusion worked")
+	}
+}
+
+// Cyrillic sources in each charset the webapp may announce must go through
+// the whole pipeline without latex errors.
+func TestPipelineCharsets(t *testing.T) {
+	if testing.Short() {
+		t.Skip("short")
+	}
+	src := "// Привет, мир\nint main() { return 0; }\n"
+	cp1251, err := charmap.Windows1251.NewEncoder().String(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		charset string
+		data    string
+	}{
+		{"windows-1251", cp1251},
+		{"", cp1251}, // default
+		{"utf-8", src},
+		{"utf-8-sig", "\xef\xbb\xbf" + src},
+	} {
+		t.Run(tc.charset, func(t *testing.T) {
+			s := &server{languageMap: map[string]string{"cpp": "cpp"}}
+			s.SourceDir, s.TexDir = t.TempDir(), t.TempDir()
+			job := &tpb.PrintJob{JobId: "s-2", Filename: "a.cpp", Charset: tc.charset, Data: []byte(tc.data)}
+			tex, err := s.processSource(context.Background(), job)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, pages, err := s.processTex(context.Background(), "s-2", tex); err != nil || pages != 1 {
+				t.Fatalf("pages=%d err=%v", pages, err)
+			}
+			lg, _ := os.ReadFile(s.TexDir + "/s-2/s-2.log")
+			if strings.Contains(string(lg), "\n! ") {
+				t.Errorf("latex errors:\n%s", lg)
+			}
+		})
 	}
 }
