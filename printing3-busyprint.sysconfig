@@ -1,0 +1,24 @@
+# STOMP broker: [user[:password]@][net[(host[:port])]]/vhost
+# The default port is 61613. A RabbitMQ vhost that starts with a slash is
+# written with two slashes: tcp(broker.example.org)//contester is the
+# vhost "/contester". Keep this file readable by root only if it holds a
+# real password.
+BUSYPRINT_STOMPDSN="contester:CHANGEME@tcp(localhost)//contester"
+
+# Work directories, inside the service's state directory.
+BUSYPRINT_SOURCEDIR="/var/lib/printing3/source"
+BUSYPRINT_TEXDIR="/var/lib/printing3/tex"
+
+# The webapp (qf-webapp) publishes print jobs to contester.protoprintjobs
+# and reads reports from contester.printingresult. FAILUREQUEUE is that
+# shared result queue: it receives failures and successful reports alike.
+# TEXQUEUE and BINARYQUEUE are the hand-offs between busyprint and printagent.
+BUSYPRINT_SOURCEQUEUE="contester.protoprintjobs"
+BUSYPRINT_TEXQUEUE="contester.texproto"
+BUSYPRINT_BINARYQUEUE="contester.binaryproto"
+BUSYPRINT_FAILUREQUEUE="contester.printingresult"
+
+# Uploaded file extension (no dot, case-sensitive) to the extension that
+# pygmentize uses to pick the lexer, comma separated. A bare name maps to
+# itself; extensions not listed are printed as plain text.
+BUSYPRINT_LANGUAGES="pas,dpr=pas,java,c,cpp=c,cxx=c,cc=c,c++=c,g++=c,py=python,py3=python,cs=csharp"

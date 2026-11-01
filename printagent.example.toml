@@ -1,0 +1,10 @@
+# Copy to config.toml next to printagent.exe, or pass -config.
+# Directory for the PostScript files that are being printed.
+workdir = "c:\\a\\w"
+# gsprint.exe from Ghostgum/GSview. A bare name is looked up in PATH.
+gsprint = "gsprint"
+stompdsn = "contester:CHANGEME@tcp(broker.example.org)//contester"
+# binaryqueue is read, failurequeue is where reports go. They must match
+# BUSYPRINT_BINARYQUEUE and BUSYPRINT_FAILUREQUEUE of printing3-busyprint.
+binaryqueue = "contester.binaryproto"
+failurequeue = "contester.printingresult"
