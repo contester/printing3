@@ -8,3 +8,8 @@ stompdsn = "contester:CHANGEME@tcp(broker.example.org)//contester"
 # BUSYPRINT_BINARYQUEUE and BUSYPRINT_FAILUREQUEUE of printing3-busyprint.
 binaryqueue = "contester.binaryproto"
 failurequeue = "contester.printingresult"
+# Seconds to wait for a job to leave the print queue before reporting it as
+# stuck (default 300).
+# jobtimeoutseconds = 300
+# Set to true to skip the printer status check (offline etc.) before printing.
+# skippreflight = false
