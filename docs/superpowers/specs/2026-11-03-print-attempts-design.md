@@ -119,13 +119,21 @@ Nothing else changes; the fields added earlier (`detail`, `pages_printed`,
 **Full attempt (first submission, or "re-render").**
 1. Webapp inserts the attempt (`full`, `queued`) and queues the `PrintJob`
    to `contester.protoprintjobs` with `job_id = a-<id>`.
-2. busyprint renders. On success it does two things: sends the `BinaryJob`
-   to the agent's queue, and sends a `RENDERED` report to
-   `contester.printingresult` carrying that same `BinaryJob`. On failure it
-   sends a `FINAL` report with `error_message`, as today.
+2. busyprint renders. On success it first sends a `RENDERED` report to
+   `contester.printingresult` carrying the `BinaryJob`, and only then sends
+   that `BinaryJob` to the agent's queue. The order matters: the agent's
+   `FINAL` report goes to the same result queue, so it can't overtake
+   `RENDERED`. If the second send fails, the attempt stays `rendered` and
+   shows as silent. On a render failure busyprint sends a `FINAL` report with
+   `error_message`, as today.
+   The attempt id was allocated in step 1 and is carried unchanged through
+   `PrintJob`, `BinaryJob` and both reports. The render has no id of its own
+   in any message.
 3. Webapp on `RENDERED`: inserts a `print_renders` row, sets the attempt's
    `render_id` and `status = rendered`.
-4. Agent prints and sends its `FINAL` report. Webapp sets `printed` or
+4. Agent prints and sends its `FINAL` report. A `FINAL` that finds no render
+   on its attempt (a broken ordering) is still applied; only the render link
+   is missing. Webapp sets `printed` or
    `failed` and the agent's fields on that attempt, and updates `print_jobs`
    if this is the latest attempt.
 
