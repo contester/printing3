@@ -3,6 +3,7 @@
 
 # pdfium.dll for printagent, from https://github.com/bblanchon/pdfium-binaries
 %global pdfium_release 8125
+%global pdfium_url https://github.com/bblanchon/pdfium-binaries/releases/download/chromium/%{pdfium_release}/pdfium-win-x64.tgz
 %global pdfium_sha256 9a964261760cff52570aabf038ab346d3a5034dd8b30d0d5fe8861235d356b8b
 
 Name:		printing3
@@ -13,7 +14,7 @@ Summary:	Source code printing pipeline for contests
 License:	MIT and Apache-2.0 and BSD-3-Clause
 URL:		https://github.com/contester/printing3
 Source0:	%{name}-%{version}.tar.gz
-Source1:	https://github.com/bblanchon/pdfium-binaries/releases/download/chromium/%{pdfium_release}/pdfium-win-x64.tgz
+Source1:	%{pdfium_url}
 
 BuildRequires:	golang
 BuildRequires:	systemd-rpm-macros
@@ -70,6 +71,10 @@ exit 0
 
 %prep
 %setup -q
+# tito only copies the git tarball into SOURCES, so fetch pdfium ourselves
+# if it isn't there (spectool -g and Copr provide it). The checksum below
+# applies either way.
+[ -f %{SOURCE1} ] || curl -fsSL -o %{SOURCE1} %{pdfium_url}
 echo "%{pdfium_sha256}  %{SOURCE1}" | sha256sum -c -
 mkdir pdfium
 tar xzf %{SOURCE1} -C pdfium bin/pdfium.dll LICENSE
