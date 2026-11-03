@@ -13,6 +13,7 @@ func TestPrinterProblem(t *testing.T) {
 	}
 	for _, p := range []printerInfo{
 		{Status: printerOffline},
+		{Status: printerPaused},
 		{Status: printerNotAvailable | printerBusy},
 		{Attributes: printerAttrWorkOffline},
 	} {

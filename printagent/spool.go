@@ -118,12 +118,13 @@ type spooler interface {
 }
 
 // printerProblem returns a reason why a job sent to this printer would
-// certainly not be printed, or "" if it looks usable. Conditions that an
-// operator can fix while the job waits in the queue (paper, toner, jam) are
-// not problems here; the job watcher reports them if they last.
+// certainly not be printed, or "" if it looks usable. A paused queue counts,
+// since someone paused it on purpose. Conditions that an operator can fix
+// while the job waits (paper, toner, jam) are not problems here; the job
+// watcher reports them if they last.
 func printerProblem(p printerInfo) string {
 	const fatal = printerOffline | printerError | printerNotAvailable |
-		printerPendingDeletion | printerServerUnknown
+		printerPendingDeletion | printerServerUnknown | printerPaused
 	if p.Attributes&printerAttrWorkOffline != 0 {
 		return "printer is set to \"Use Printer Offline\""
 	}
@@ -225,6 +226,7 @@ func (w *jobWatcher) find(jobs []jobInfo, submitted bool) (bool, jobOutcome) {
 	if w.absent++; w.absent >= absentPolls {
 		// Either the printer was fast enough that the job came and went
 		// between two polls, or it never reached the queue.
+		log.Warnf("No new job like %q appeared in the queue; queue is: %s", w.docName, describeJobs(jobs))
 		return true, jobOutcome{Printed: true}
 	}
 	return false, jobOutcome{}
@@ -267,8 +269,24 @@ func watchJob(ctx context.Context, sp spooler, printer string, w *jobWatcher, su
 		}
 		select {
 		case <-ctx.Done():
-			return w.timeout()
+			out := w.timeout()
+			// A paused or broken printer shows up on the printer, not the job.
+			if pi, err := sp.Printer(printer); err == nil && pi.Status != 0 {
+				out.Message += "; printer status: " + describeBits(pi.Status, printerBits)
+			}
+			return out
 		case <-t.C:
 		}
 	}
+}
+
+func describeJobs(jobs []jobInfo) string {
+	if len(jobs) == 0 {
+		return "empty"
+	}
+	var parts []string
+	for _, j := range jobs {
+		parts = append(parts, fmt.Sprintf("#%d %q [%s]", j.ID, j.Document, describeBits(j.Status, jobBits)))
+	}
+	return strings.Join(parts, "; ")
 }
