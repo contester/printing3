@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -148,6 +149,7 @@ type jobOutcome struct {
 // has to contain docName, or, once the command is done, there has to be
 // exactly one new job.
 type jobWatcher struct {
+	mu       sync.Mutex // observe runs in the poller, know in the submitter
 	baseline map[uint32]bool
 	docName  string
 
@@ -170,6 +172,8 @@ const absentPolls = 3
 // observe takes the current queue contents and reports whether the outcome
 // is final. submitted says the print command has already exited.
 func (w *jobWatcher) observe(jobs []jobInfo, submitted bool) (bool, jobOutcome) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
 	if !w.found {
 		if done, out := w.find(jobs, submitted); !w.found {
 			return done, out
@@ -233,6 +237,20 @@ func (w *jobWatcher) find(jobs []jobInfo, submitted bool) (bool, jobOutcome) {
 	return false, jobOutcome{}
 }
 
+// know tells the watcher the id of the job once the submitter learns it,
+// which saves guessing from the queue.
+func (w *jobWatcher) know(id uint32, docName string) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	if w.found {
+		if w.last.ID != id {
+			log.Warnf("Tracking spooler job %d, but the submitter says %d", w.last.ID, id)
+		}
+		return
+	}
+	w.adopt(jobInfo{ID: id, Document: docName}, "job id known")
+}
+
 func (w *jobWatcher) adopt(j jobInfo, why string) {
 	log.Infof("Tracking spooler job %d %q (%s)", j.ID, j.Document, why)
 	w.found = true
@@ -250,6 +268,8 @@ func (w *jobWatcher) outcome(printed bool, msg string) jobOutcome {
 }
 
 func (w *jobWatcher) timeout() jobOutcome {
+	w.mu.Lock()
+	defer w.mu.Unlock()
 	if !w.found {
 		return jobOutcome{Message: "print job did not show up in the print queue"}
 	}

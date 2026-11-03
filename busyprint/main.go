@@ -62,7 +62,19 @@ func (s *server) processTexJob(ctx context.Context, msg *stomp.Message) error {
 		JobId:   job.GetJobId(),
 	}
 
-	bpb.Data, bpb.Pages, err = s.processTex(ctx, bpb.JobId, job.GetData())
+	if s.Output == "pdf" {
+		var pdf []byte
+		pdf, bpb.Pages, err = s.processTexPDF(ctx, bpb.JobId, job.GetData())
+		if err == nil {
+			bpb.Payload = &tpb.BinaryJob_Pdf{Pdf: pdf}
+		}
+	} else {
+		var ps []byte
+		ps, bpb.Pages, err = s.processTex(ctx, bpb.JobId, job.GetData())
+		if err == nil {
+			bpb.Payload = &tpb.BinaryJob_Ps{Ps: ps}
+		}
+	}
 	if err != nil {
 		return tools.SendAndAck(msg, s.FailureQueue, &tpb.PrintJobReport{
 			JobExpandedId:    job.GetJobId(),
@@ -86,6 +98,10 @@ type bconfig struct {
 	BinaryQueue  string
 
 	Languages []string
+
+	// Output is the format sent to the print agent: "ps" (latex, dvips) or
+	// "pdf" (pdflatex).
+	Output string `default:"ps"`
 }
 
 func main() {
@@ -94,6 +110,10 @@ func main() {
 	var srv server
 	if err := envconfig.Process("busyprint", &srv.bconfig); err != nil {
 		log.Fatal(err)
+	}
+
+	if srv.Output != "ps" && srv.Output != "pdf" {
+		log.Fatalf("BUSYPRINT_OUTPUT must be ps or pdf, got %q", srv.Output)
 	}
 
 	srv.languageMap = make(map[string]string)

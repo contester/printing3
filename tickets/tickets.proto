@@ -20,8 +20,15 @@ message PrintJob {
 message PrintJobReport {
     string job_expanded_id = 1;
     int64 num_pages = 2;
+    // Empty on success.
     string error_message = 3;
     int64 timestamp_seconds = 4;
+    // What the print agent observed, for humans: spooler job state, printer status.
+    string detail = 5;
+    // Pages the print spooler reports as printed; 0 if it couldn't tell.
+    int64 pages_printed = 6;
+    // Job id in the print spooler of the machine that ran the print agent.
+    uint32 spooler_job_id = 7;
 }
 
 message TexJob {
@@ -32,7 +39,12 @@ message TexJob {
 
 message BinaryJob {
     string printer = 1;
-    bytes data = 2;
+    // Field 2 was a plain "bytes data" holding PostScript; the wire format of
+    // a oneof member is the same, so old and new peers still understand it.
+    oneof payload {
+        bytes ps = 2;
+        bytes pdf = 5;
+    }
     string job_id = 3;
     int64 pages = 4;
 };

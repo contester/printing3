@@ -22,3 +22,7 @@ BUSYPRINT_FAILUREQUEUE="contester.printingresult"
 # pygmentize uses to pick the lexer, comma separated. A bare name maps to
 # itself; extensions not listed are printed as plain text.
 BUSYPRINT_LANGUAGES="pas,dpr=pas,java,c,cpp=c,cxx=c,cc=c,c++=c,g++=c,py=python,py3=python,cs=csharp"
+
+# Format sent to printagent: "ps" (latex + dvips, gsprint prints it) or "pdf"
+# (pdflatex, printagent renders it with PDFium). Default ps.
+#BUSYPRINT_OUTPUT="ps"

@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -106,6 +108,61 @@ func TestPipelineCharsets(t *testing.T) {
 			lg, _ := os.ReadFile(s.TexDir + "/s-2/s-2.log")
 			if strings.Contains(string(lg), "\n! ") {
 				t.Errorf("latex errors:\n%s", lg)
+			}
+		})
+	}
+}
+
+// The pdflatex route: same hostile and Cyrillic inputs, a real PDF, A4 pages.
+func TestPipelinePDF(t *testing.T) {
+	if testing.Short() {
+		t.Skip("short")
+	}
+	src := "// Привет, мир\nint main() { return 0; }\n"
+	cp1251, err := charmap.Windows1251.NewEncoder().String(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	secret := t.TempDir() + "/secret.txt"
+	os.WriteFile(secret, []byte("TOPSECRETCONTENT"), 0o644)
+	for _, tc := range []struct {
+		name, charset, filename, data string
+	}{
+		{"cp1251", "windows-1251", "a.cpp", cp1251},
+		{"utf8", "utf-8", "a.cpp", src},
+		{"hostile", "utf-8", `x}\input{` + secret + `}.cpp`, src},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := &server{languageMap: map[string]string{"cpp": "cpp"}}
+			s.SourceDir, s.TexDir = t.TempDir(), t.TempDir()
+			job := &tpb.PrintJob{JobId: "s-3", Filename: tc.filename, Charset: tc.charset, Data: []byte(tc.data)}
+			tex, err := s.processSource(context.Background(), job)
+			if err != nil {
+				t.Fatal(err)
+			}
+			pdf, pages, err := s.processTexPDF(context.Background(), "s-3", tex)
+			if err != nil || pages != 1 {
+				lg, _ := os.ReadFile(s.TexDir + "/s-3/s-3.log")
+				t.Fatalf("pages=%d err=%v\n%s", pages, err, lg)
+			}
+			if !strings.HasPrefix(string(pdf), "%PDF-") {
+				t.Fatal("not a pdf")
+			}
+			// The MediaBox sits in a compressed object stream, so ask pdfinfo.
+			if _, err := exec.LookPath("pdfinfo"); err == nil {
+				f := filepath.Join(t.TempDir(), "x.pdf")
+				os.WriteFile(f, pdf, 0o644)
+				out, _ := exec.Command("pdfinfo", f).CombinedOutput()
+				if !strings.Contains(string(out), "(A4)") {
+					t.Errorf("page is not A4:\n%s", out)
+				}
+			}
+			lg, _ := os.ReadFile(s.TexDir + "/s-3/s-3.log")
+			if strings.Contains(string(lg), "\n! ") {
+				t.Errorf("latex errors:\n%s", lg)
+			}
+			if strings.Contains(string(pdf), "TOPSECRET") {
+				t.Error("file inclusion worked")
 			}
 		})
 	}

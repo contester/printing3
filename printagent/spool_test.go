@@ -104,3 +104,15 @@ func TestWatchJobTimeout(t *testing.T) {
 	}
 	t.Log(out.Message)
 }
+
+func TestWatcherKnownID(t *testing.T) {
+	w := newJobWatcher(nil, "x.pdf")
+	w.know(7, "x.pdf")
+	// Name doesn't match, but the id is known.
+	if done, _ := w.observe([]jobInfo{{ID: 7, Document: "other", Status: jobSpooling}}, false); done {
+		t.Fatal("still spooling")
+	}
+	if done, out := w.observe(nil, true); !done || !out.Printed || out.JobID != 7 {
+		t.Fatalf("got %v %+v", done, out)
+	}
+}
