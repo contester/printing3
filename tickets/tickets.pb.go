@@ -21,6 +21,55 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type PrintJobReport_Stage int32
+
+const (
+	// A final result: success if error_message is empty. This is what
+	// reports without a stage have always meant.
+	PrintJobReport_FINAL PrintJobReport_Stage = 0
+	// The job was rendered and handed to the print agent; render is set.
+	PrintJobReport_RENDERED PrintJobReport_Stage = 1
+)
+
+// Enum value maps for PrintJobReport_Stage.
+var (
+	PrintJobReport_Stage_name = map[int32]string{
+		0: "FINAL",
+		1: "RENDERED",
+	}
+	PrintJobReport_Stage_value = map[string]int32{
+		"FINAL":    0,
+		"RENDERED": 1,
+	}
+)
+
+func (x PrintJobReport_Stage) Enum() *PrintJobReport_Stage {
+	p := new(PrintJobReport_Stage)
+	*p = x
+	return p
+}
+
+func (x PrintJobReport_Stage) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (PrintJobReport_Stage) Descriptor() protoreflect.EnumDescriptor {
+	return file_tickets_proto_enumTypes[0].Descriptor()
+}
+
+func (PrintJobReport_Stage) Type() protoreflect.EnumType {
+	return &file_tickets_proto_enumTypes[0]
+}
+
+func (x PrintJobReport_Stage) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use PrintJobReport_Stage.Descriptor instead.
+func (PrintJobReport_Stage) EnumDescriptor() ([]byte, []int) {
+	return file_tickets_proto_rawDescGZIP(), []int{1, 0}
+}
+
 type PrintJob struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Filename         string                 `protobuf:"bytes,1,opt,name=filename,proto3" json:"filename,omitempty"`
@@ -149,7 +198,10 @@ type PrintJobReport struct {
 	// Pages the print spooler reports as printed; 0 if it couldn't tell.
 	PagesPrinted int64 `protobuf:"varint,6,opt,name=pages_printed,json=pagesPrinted,proto3" json:"pages_printed,omitempty"`
 	// Job id in the print spooler of the machine that ran the print agent.
-	SpoolerJobId  uint32 `protobuf:"varint,7,opt,name=spooler_job_id,json=spoolerJobId,proto3" json:"spooler_job_id,omitempty"`
+	SpoolerJobId uint32               `protobuf:"varint,7,opt,name=spooler_job_id,json=spoolerJobId,proto3" json:"spooler_job_id,omitempty"`
+	Stage        PrintJobReport_Stage `protobuf:"varint,8,opt,name=stage,proto3,enum=tickets.PrintJobReport_Stage" json:"stage,omitempty"`
+	// Only for stage RENDERED. printer and job_id in it are the attempt's.
+	Render        *BinaryJob `protobuf:"bytes,9,opt,name=render,proto3" json:"render,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -231,6 +283,20 @@ func (x *PrintJobReport) GetSpoolerJobId() uint32 {
 		return x.SpoolerJobId
 	}
 	return 0
+}
+
+func (x *PrintJobReport) GetStage() PrintJobReport_Stage {
+	if x != nil {
+		return x.Stage
+	}
+	return PrintJobReport_FINAL
+}
+
+func (x *PrintJobReport) GetRender() *BinaryJob {
+	if x != nil {
+		return x.Render
+	}
+	return nil
 }
 
 type TexJob struct {
@@ -862,7 +928,7 @@ const file_tickets_proto_rawDesc = "" +
 	"\aprinter\x18\b \x01(\tR\aprinter\x12\x15\n" +
 	"\x06job_id\x18\t \x01(\tR\x05jobId\x12\x18\n" +
 	"\acharset\x18\n" +
-	" \x01(\tR\acharset\"\x8a\x02\n" +
+	" \x01(\tR\acharset\"\x8d\x03\n" +
 	"\x0ePrintJobReport\x12&\n" +
 	"\x0fjob_expanded_id\x18\x01 \x01(\tR\rjobExpandedId\x12\x1b\n" +
 	"\tnum_pages\x18\x02 \x01(\x03R\bnumPages\x12#\n" +
@@ -870,7 +936,12 @@ const file_tickets_proto_rawDesc = "" +
 	"\x11timestamp_seconds\x18\x04 \x01(\x03R\x10timestampSeconds\x12\x16\n" +
 	"\x06detail\x18\x05 \x01(\tR\x06detail\x12#\n" +
 	"\rpages_printed\x18\x06 \x01(\x03R\fpagesPrinted\x12$\n" +
-	"\x0espooler_job_id\x18\a \x01(\rR\fspoolerJobId\"M\n" +
+	"\x0espooler_job_id\x18\a \x01(\rR\fspoolerJobId\x123\n" +
+	"\x05stage\x18\b \x01(\x0e2\x1d.tickets.PrintJobReport.StageR\x05stage\x12*\n" +
+	"\x06render\x18\t \x01(\v2\x12.tickets.BinaryJobR\x06render\" \n" +
+	"\x05Stage\x12\t\n" +
+	"\x05FINAL\x10\x00\x12\f\n" +
+	"\bRENDERED\x10\x01\"M\n" +
 	"\x06TexJob\x12\x18\n" +
 	"\aprinter\x18\x01 \x01(\tR\aprinter\x12\x12\n" +
 	"\x04data\x18\x02 \x01(\fR\x04data\x12\x15\n" +
@@ -928,38 +999,42 @@ func file_tickets_proto_rawDescGZIP() []byte {
 	return file_tickets_proto_rawDescData
 }
 
+var file_tickets_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_tickets_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_tickets_proto_goTypes = []any{
-	(*PrintJob)(nil),             // 0: tickets.PrintJob
-	(*PrintJobReport)(nil),       // 1: tickets.PrintJobReport
-	(*TexJob)(nil),               // 2: tickets.TexJob
-	(*BinaryJob)(nil),            // 3: tickets.BinaryJob
-	(*IdName)(nil),               // 4: tickets.IdName
-	(*Computer)(nil),             // 5: tickets.Computer
-	(*Ticket)(nil),               // 6: tickets.Ticket
-	(*Ticket_Submit)(nil),        // 7: tickets.Ticket.Submit
-	(*Ticket_Problem)(nil),       // 8: tickets.Ticket.Problem
-	(*Ticket_Submit_School)(nil), // 9: tickets.Ticket.Submit.School
-	(*Ticket_Submit_ACM)(nil),    // 10: tickets.Ticket.Submit.ACM
+	(PrintJobReport_Stage)(0),    // 0: tickets.PrintJobReport.Stage
+	(*PrintJob)(nil),             // 1: tickets.PrintJob
+	(*PrintJobReport)(nil),       // 2: tickets.PrintJobReport
+	(*TexJob)(nil),               // 3: tickets.TexJob
+	(*BinaryJob)(nil),            // 4: tickets.BinaryJob
+	(*IdName)(nil),               // 5: tickets.IdName
+	(*Computer)(nil),             // 6: tickets.Computer
+	(*Ticket)(nil),               // 7: tickets.Ticket
+	(*Ticket_Submit)(nil),        // 8: tickets.Ticket.Submit
+	(*Ticket_Problem)(nil),       // 9: tickets.Ticket.Problem
+	(*Ticket_Submit_School)(nil), // 10: tickets.Ticket.Submit.School
+	(*Ticket_Submit_ACM)(nil),    // 11: tickets.Ticket.Submit.ACM
 }
 var file_tickets_proto_depIdxs = []int32{
-	4,  // 0: tickets.PrintJob.contest:type_name -> tickets.IdName
-	4,  // 1: tickets.PrintJob.team:type_name -> tickets.IdName
-	5,  // 2: tickets.PrintJob.computer:type_name -> tickets.Computer
-	4,  // 3: tickets.PrintJob.area:type_name -> tickets.IdName
-	4,  // 4: tickets.Ticket.contest:type_name -> tickets.IdName
-	4,  // 5: tickets.Ticket.team:type_name -> tickets.IdName
-	4,  // 6: tickets.Ticket.area:type_name -> tickets.IdName
-	5,  // 7: tickets.Ticket.computer:type_name -> tickets.Computer
-	8,  // 8: tickets.Ticket.problem:type_name -> tickets.Ticket.Problem
-	7,  // 9: tickets.Ticket.submit:type_name -> tickets.Ticket.Submit
-	9,  // 10: tickets.Ticket.Submit.school:type_name -> tickets.Ticket.Submit.School
-	10, // 11: tickets.Ticket.Submit.acm:type_name -> tickets.Ticket.Submit.ACM
-	12, // [12:12] is the sub-list for method output_type
-	12, // [12:12] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	5,  // 0: tickets.PrintJob.contest:type_name -> tickets.IdName
+	5,  // 1: tickets.PrintJob.team:type_name -> tickets.IdName
+	6,  // 2: tickets.PrintJob.computer:type_name -> tickets.Computer
+	5,  // 3: tickets.PrintJob.area:type_name -> tickets.IdName
+	0,  // 4: tickets.PrintJobReport.stage:type_name -> tickets.PrintJobReport.Stage
+	4,  // 5: tickets.PrintJobReport.render:type_name -> tickets.BinaryJob
+	5,  // 6: tickets.Ticket.contest:type_name -> tickets.IdName
+	5,  // 7: tickets.Ticket.team:type_name -> tickets.IdName
+	5,  // 8: tickets.Ticket.area:type_name -> tickets.IdName
+	6,  // 9: tickets.Ticket.computer:type_name -> tickets.Computer
+	9,  // 10: tickets.Ticket.problem:type_name -> tickets.Ticket.Problem
+	8,  // 11: tickets.Ticket.submit:type_name -> tickets.Ticket.Submit
+	10, // 12: tickets.Ticket.Submit.school:type_name -> tickets.Ticket.Submit.School
+	11, // 13: tickets.Ticket.Submit.acm:type_name -> tickets.Ticket.Submit.ACM
+	14, // [14:14] is the sub-list for method output_type
+	14, // [14:14] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_tickets_proto_init() }
@@ -976,13 +1051,14 @@ func file_tickets_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_tickets_proto_rawDesc), len(file_tickets_proto_rawDesc)),
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_tickets_proto_goTypes,
 		DependencyIndexes: file_tickets_proto_depIdxs,
+		EnumInfos:         file_tickets_proto_enumTypes,
 		MessageInfos:      file_tickets_proto_msgTypes,
 	}.Build()
 	File_tickets_proto = out.File

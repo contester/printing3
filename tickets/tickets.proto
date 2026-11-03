@@ -29,6 +29,17 @@ message PrintJobReport {
     int64 pages_printed = 6;
     // Job id in the print spooler of the machine that ran the print agent.
     uint32 spooler_job_id = 7;
+
+    enum Stage {
+        // A final result: success if error_message is empty. This is what
+        // reports without a stage have always meant.
+        FINAL = 0;
+        // The job was rendered and handed to the print agent; render is set.
+        RENDERED = 1;
+    }
+    Stage stage = 8;
+    // Only for stage RENDERED. printer and job_id in it are the attempt's.
+    BinaryJob render = 9;
 }
 
 message TexJob {
