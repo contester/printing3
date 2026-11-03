@@ -225,9 +225,10 @@ func (w *jobWatcher) find(jobs []jobInfo, submitted bool) (bool, jobOutcome) {
 	}
 	if w.absent++; w.absent >= absentPolls {
 		// Either the printer was fast enough that the job came and went
-		// between two polls, or it never reached the queue.
+		// between two polls, or it never reached the queue. A false "printed"
+		// is worse than a false failure, so report an error.
 		log.Warnf("No new job like %q appeared in the queue; queue is: %s", w.docName, describeJobs(jobs))
-		return true, jobOutcome{Printed: true}
+		return true, jobOutcome{Message: "print job never appeared in the print queue"}
 	}
 	return false, jobOutcome{}
 }

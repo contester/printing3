@@ -71,8 +71,6 @@ func (s *server) print(printerName, sourceFullName string) (int64, error) {
 
 	out := <-result
 	switch {
-	case !out.Observed && out.Printed:
-		log.Warnf("Job for %q was never seen in the queue; assuming it was printed", printerName)
 	case out.Printed:
 		log.Infof("Spooler job %d finished, %d pages printed", out.JobID, out.PagesPrinted)
 	}

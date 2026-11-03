@@ -81,7 +81,7 @@ func TestWatcherNeverAppears(t *testing.T) {
 			t.Fatal("gave up too early")
 		}
 	}
-	if done, out := w.observe(nil, true); !done || out.Observed {
+	if done, out := w.observe(nil, true); !done || out.Observed || out.Printed || out.Message == "" {
 		t.Fatalf("got %v %+v", done, out)
 	}
 }
