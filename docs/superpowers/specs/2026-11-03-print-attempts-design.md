@@ -104,10 +104,10 @@ attempt of that job.
 
 `PrintJobReport` gets:
 
-- `stage` (enum): `FINAL = 0` (the default, so old programs' reports mean
+- `stage = 8` (enum): `FINAL = 0` (the default, so old programs' reports mean
   what they meant before: success if `error_message` is empty, failure
-  otherwise) and `RENDERED = 1`.
-- `BinaryJob render = 8`: set only on `RENDERED` reports; the payload, page
+  otherwise) and `RENDERED = 1`. A stage a reader doesn't know is ignored.
+- `BinaryJob render = 9`: set only on `RENDERED` reports; the payload, page
   count and format of the render. `printer` and `job_id` in it are the
   attempt's.
 
@@ -119,12 +119,11 @@ Nothing else changes; the fields added earlier (`detail`, `pages_printed`,
 **Full attempt (first submission, or "re-render").**
 1. Webapp inserts the attempt (`full`, `queued`) and queues the `PrintJob`
    to `contester.protoprintjobs` with `job_id = a-<id>`.
-2. busyprint renders. On success it first sends a `RENDERED` report to
-   `contester.printingresult` carrying the `BinaryJob`, and only then sends
-   that `BinaryJob` to the agent's queue. The order matters: the agent's
-   `FINAL` report goes to the same result queue, so it can't overtake
-   `RENDERED`. If the second send fails, the attempt stays `rendered` and
-   shows as silent. On a render failure busyprint sends a `FINAL` report with
+2. busyprint renders. On success it sends a `RENDERED` report to
+   `contester.printingresult` carrying the `BinaryJob`, and then that
+   `BinaryJob` to the agent's queue, both in one STOMP transaction with the
+   ack of the incoming job. The order matters: the agent's `FINAL` report
+   goes to the same result queue, so it can't overtake `RENDERED`. On a render failure busyprint sends a `FINAL` report with
    `error_message`, as today.
    The attempt id was allocated in step 1 and is carried unchanged through
    `PrintJob`, `BinaryJob` and both reports. The render has no id of its own
@@ -196,3 +195,12 @@ All proto changes are additive. Any order works:
 - No timer-driven "lost" state, and the agent does not cancel timed-out
   spooler jobs.
 - Deploy webapp before busyprint (see above).
+
+## Rollout
+
+1. Apply `docs/superpowers/plans/print-attempts.sql` (needs `contester-dbmodel`
+   with the new tables published for the webapp build).
+2. Deploy `qf-webapp`.
+3. Deploy busyprint (`tito build --rpm`). Until then no `RENDERED` reports
+   arrive and reprints fall back to full attempts.
+4. printagent needs no change.
