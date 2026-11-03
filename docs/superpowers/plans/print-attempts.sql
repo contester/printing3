@@ -1,32 +1,30 @@
 -- Print attempts: apply by hand with psql, in this order.
 --
--- Before running, check the column types of the existing table:
---     \d print_jobs
--- and use the same type for the timestamp columns below as print_jobs.arrived
--- uses. This file says "timestamp"; change it to "timestamptz" if arrived is.
--- print_jobs itself is not altered.
+-- print_jobs.arrived is "timestamp with time zone" in the contest database, so
+-- the timestamp columns below are timestamptz. Check with \d print_jobs if
+-- yours differs. print_jobs itself is not altered.
 
 BEGIN;
 
 CREATE TABLE print_renders (
-    id       bigserial PRIMARY KEY,
-    job_id   bigint    NOT NULL,
-    format   text      NOT NULL,
-    pages    integer   NOT NULL,
-    data     bytea     NOT NULL,
-    created  timestamp NOT NULL DEFAULT now()
+    id       bigserial   PRIMARY KEY,
+    job_id   bigint      NOT NULL,
+    format   text        NOT NULL,
+    pages    integer     NOT NULL,
+    data     bytea       NOT NULL,
+    created  timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE TABLE print_attempts (
     id              bigserial PRIMARY KEY,
     job_id          bigint    NOT NULL,
     kind            text      NOT NULL,
-    created         timestamp NOT NULL DEFAULT now(),
+    created         timestamptz NOT NULL DEFAULT now(),
     requested_by    text,
     printer         text      NOT NULL,
     render_id       bigint,
     status          text      NOT NULL,
-    finished        timestamp,
+    finished        timestamptz,
     pages_printed   integer   NOT NULL DEFAULT 0,
     spooler_job_id  bigint,
     error           text      NOT NULL DEFAULT '',
