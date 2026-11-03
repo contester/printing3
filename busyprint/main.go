@@ -83,7 +83,11 @@ func (s *server) processTexJob(ctx context.Context, msg *stomp.Message) error {
 		})
 	}
 
-	return tools.SendAndAck(msg, s.BinaryQueue, &bpb)
+	// The report goes first: it and the agent's final report share a queue, so
+	// the webapp sees RENDERED before it can see the print result.
+	return tools.SendAllAndAck(msg,
+		tools.Outgoing{Dest: s.FailureQueue, Msg: renderedReport(&bpb)},
+		tools.Outgoing{Dest: s.BinaryQueue, Msg: &bpb})
 }
 
 type bconfig struct {
