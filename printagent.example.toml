@@ -17,3 +17,9 @@ failurequeue = "contester.printingresult"
 # jobtimeoutseconds = 300
 # Set to true to skip the printer status check (offline etc.) before printing.
 # skippreflight = false
+# Name of this agent in the list of remote printers that is sent to the web
+# application (default: the host name). The list is sent to printersqueue
+# (default contester.printers) every printersintervalseconds (default 300).
+# agentname = "hall-printserver"
+# printersqueue = "contester.printers"
+# printersintervalseconds = 300

@@ -116,6 +116,28 @@ type printerInfo struct {
 type spooler interface {
 	Printer(name string) (printerInfo, error)
 	Jobs(name string) ([]jobInfo, error)
+	// RemotePrinters lists the network printers this machine is connected to,
+	// for the current user.
+	RemotePrinters() ([]remotePrinter, error)
+}
+
+// remotePrinter is a printer connection, \\server\share.
+type remotePrinter struct {
+	UNC, Server, Share string
+}
+
+// parseUNC splits \\server\share. It reports false for any other name, such
+// as a local printer.
+func parseUNC(name string) (remotePrinter, bool) {
+	rest, ok := strings.CutPrefix(name, `\\`)
+	if !ok {
+		return remotePrinter{}, false
+	}
+	server, share, ok := strings.Cut(rest, `\`)
+	if !ok || server == "" || share == "" || strings.Contains(share, `\`) {
+		return remotePrinter{}, false
+	}
+	return remotePrinter{UNC: name, Server: server, Share: share}, true
 }
 
 // printerProblem returns a reason why a job sent to this printer would

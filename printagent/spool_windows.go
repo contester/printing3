@@ -13,7 +13,22 @@ var (
 	procClosePrinter = winspool.NewProc("ClosePrinter")
 	procGetPrinter   = winspool.NewProc("GetPrinterW")
 	procEnumJobs     = winspool.NewProc("EnumJobsW")
+	procEnumPrinters = winspool.NewProc("EnumPrintersW")
 )
+
+const (
+	// Printers this user is connected to on print servers.
+	printerEnumConnections = 0x4
+	printerAttrNetwork     = 0x10
+)
+
+// PRINTER_INFO_4W: all that EnumPrinters returns at level 4, without
+// contacting the print servers.
+type printerInfo4 struct {
+	PrinterName *uint16
+	ServerName  *uint16
+	Attributes  uint32
+}
 
 // PRINTER_INFO_2W
 type printerInfo2 struct {
@@ -132,6 +147,33 @@ func (winSpooler) Jobs(name string) ([]jobInfo, error) {
 			TotalPages:   j.TotalPages,
 			PagesPrinted: j.PagesPrinted,
 		})
+	}
+	return res, nil
+}
+
+func (winSpooler) RemotePrinters() ([]remotePrinter, error) {
+	var need, count uint32
+	// Expected to fail with ERROR_INSUFFICIENT_BUFFER and tell the size.
+	procEnumPrinters.Call(printerEnumConnections, 0, 4, 0, 0,
+		uintptr(unsafe.Pointer(&need)), uintptr(unsafe.Pointer(&count)))
+	if need == 0 {
+		return nil, nil
+	}
+	buf := make([]byte, need)
+	r, _, e := procEnumPrinters.Call(printerEnumConnections, 0, 4, uintptr(unsafe.Pointer(&buf[0])), uintptr(need),
+		uintptr(unsafe.Pointer(&need)), uintptr(unsafe.Pointer(&count)))
+	if r == 0 {
+		return nil, fmt.Errorf("EnumPrinters: %w", e)
+	}
+	raw := unsafe.Slice((*printerInfo4)(unsafe.Pointer(&buf[0])), count)
+	var res []remotePrinter
+	for _, p := range raw {
+		if p.Attributes&printerAttrNetwork == 0 {
+			continue
+		}
+		if rp, ok := parseUNC(windows.UTF16PtrToString(p.PrinterName)); ok {
+			res = append(res, rp)
+		}
 	}
 	return res, nil
 }

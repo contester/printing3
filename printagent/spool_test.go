@@ -88,8 +88,9 @@ func TestWatcherNeverAppears(t *testing.T) {
 
 type fakeSpooler struct{ jobs atomic.Value }
 
-func (f *fakeSpooler) Printer(string) (printerInfo, error) { return printerInfo{}, nil }
-func (f *fakeSpooler) Jobs(string) ([]jobInfo, error)      { return f.jobs.Load().([]jobInfo), nil }
+func (f *fakeSpooler) Printer(string) (printerInfo, error)      { return printerInfo{}, nil }
+func (f *fakeSpooler) Jobs(string) ([]jobInfo, error)           { return f.jobs.Load().([]jobInfo), nil }
+func (f *fakeSpooler) RemotePrinters() ([]remotePrinter, error) { return nil, nil }
 
 func TestWatchJobTimeout(t *testing.T) {
 	f := &fakeSpooler{}
@@ -114,5 +115,30 @@ func TestWatcherKnownID(t *testing.T) {
 	}
 	if done, out := w.observe(nil, true); !done || !out.Printed || out.JobID != 7 {
 		t.Fatalf("got %v %+v", done, out)
+	}
+}
+
+func TestParseUNC(t *testing.T) {
+	good, ok := parseUNC(`\\print1\HP-Hall`)
+	if !ok || good != (remotePrinter{UNC: `\\print1\HP-Hall`, Server: "print1", Share: "HP-Hall"}) {
+		t.Errorf("got %+v, %v", good, ok)
+	}
+	for _, bad := range []string{"", "Microsoft Print to PDF", `\\print1`, `\\print1\`, `\\\share`, `\\a\b\c`, `\a\b`} {
+		if p, ok := parseUNC(bad); ok {
+			t.Errorf("%q parsed as %+v", bad, p)
+		}
+	}
+}
+
+func TestPrinterList(t *testing.T) {
+	l := printerList("hall", time.Unix(100, 0), []remotePrinter{
+		{UNC: `\\b\two`, Server: "b", Share: "two"},
+		{UNC: `\\a\one`, Server: "a", Share: "one"},
+	})
+	if l.GetAgent() != "hall" || l.GetTimestampSeconds() != 100 || len(l.GetPrinters()) != 2 {
+		t.Fatalf("got %v", l)
+	}
+	if l.Printers[0].GetUnc() != `\\a\one` || l.Printers[0].GetServer() != "a" || l.Printers[0].GetShare() != "one" {
+		t.Errorf("not sorted or wrong fields: %v", l.Printers)
 	}
 }

@@ -207,11 +207,21 @@ type sconfig struct {
 	JobTimeoutSeconds int
 	// SkipPreflight disables the check of the printer status before printing.
 	SkipPreflight bool
+
+	// AgentName tells this agent from others in the printer list sent to the
+	// web application. Default is the host name.
+	AgentName string
+	// PrintersQueue is where the list of remote printers goes. Default
+	// contester.printers.
+	PrintersQueue string
+	// PrintersIntervalSeconds is how often that list is sent. Default 300.
+	PrintersIntervalSeconds int
 }
 
 var (
 	configFile = flag.String("config", "config.toml", "Config file")
 	dryRun     = flag.Bool("dry_run", false, "dry run")
+	listOnly   = flag.Bool("list_printers", false, "print the remote printers this agent would report, and exit")
 )
 
 func main() {
@@ -219,6 +229,17 @@ func main() {
 	srv := server{spool: newSpooler()}
 	if _, err := toml.DecodeFile(*configFile, &srv.sconfig); err != nil {
 		log.Fatal(err)
+	}
+
+	if *listOnly {
+		printers, err := srv.spool.RemotePrinters()
+		if err != nil {
+			log.Fatal(err)
+		}
+		for _, p := range printerList(srv.agentName(), time.Now(), printers).Printers {
+			fmt.Println(p.GetUnc())
+		}
+		return
 	}
 
 	sconf, err := tools.ParseStompDSN(srv.sconfig.StompDSN)
@@ -239,6 +260,8 @@ func main() {
 		log.Fatal(err)
 	}
 	defer sub.Unsubscribe()
+
+	go srv.publishPrinters(ctx, conn)
 
 	select {}
 }

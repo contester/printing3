@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.12
 // 	protoc        v7.36.2
-// source: tickets.proto
+// source: tickets/tickets.proto
 
 package tickets
 
@@ -54,11 +54,11 @@ func (x PrintJobReport_Stage) String() string {
 }
 
 func (PrintJobReport_Stage) Descriptor() protoreflect.EnumDescriptor {
-	return file_tickets_proto_enumTypes[0].Descriptor()
+	return file_tickets_tickets_proto_enumTypes[0].Descriptor()
 }
 
 func (PrintJobReport_Stage) Type() protoreflect.EnumType {
-	return &file_tickets_proto_enumTypes[0]
+	return &file_tickets_tickets_proto_enumTypes[0]
 }
 
 func (x PrintJobReport_Stage) Number() protoreflect.EnumNumber {
@@ -67,7 +67,7 @@ func (x PrintJobReport_Stage) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use PrintJobReport_Stage.Descriptor instead.
 func (PrintJobReport_Stage) EnumDescriptor() ([]byte, []int) {
-	return file_tickets_proto_rawDescGZIP(), []int{1, 0}
+	return file_tickets_tickets_proto_rawDescGZIP(), []int{1, 0}
 }
 
 type PrintJob struct {
@@ -88,7 +88,7 @@ type PrintJob struct {
 
 func (x *PrintJob) Reset() {
 	*x = PrintJob{}
-	mi := &file_tickets_proto_msgTypes[0]
+	mi := &file_tickets_tickets_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -100,7 +100,7 @@ func (x *PrintJob) String() string {
 func (*PrintJob) ProtoMessage() {}
 
 func (x *PrintJob) ProtoReflect() protoreflect.Message {
-	mi := &file_tickets_proto_msgTypes[0]
+	mi := &file_tickets_tickets_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -113,7 +113,7 @@ func (x *PrintJob) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PrintJob.ProtoReflect.Descriptor instead.
 func (*PrintJob) Descriptor() ([]byte, []int) {
-	return file_tickets_proto_rawDescGZIP(), []int{0}
+	return file_tickets_tickets_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *PrintJob) GetFilename() string {
@@ -208,7 +208,7 @@ type PrintJobReport struct {
 
 func (x *PrintJobReport) Reset() {
 	*x = PrintJobReport{}
-	mi := &file_tickets_proto_msgTypes[1]
+	mi := &file_tickets_tickets_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -220,7 +220,7 @@ func (x *PrintJobReport) String() string {
 func (*PrintJobReport) ProtoMessage() {}
 
 func (x *PrintJobReport) ProtoReflect() protoreflect.Message {
-	mi := &file_tickets_proto_msgTypes[1]
+	mi := &file_tickets_tickets_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -233,7 +233,7 @@ func (x *PrintJobReport) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PrintJobReport.ProtoReflect.Descriptor instead.
 func (*PrintJobReport) Descriptor() ([]byte, []int) {
-	return file_tickets_proto_rawDescGZIP(), []int{1}
+	return file_tickets_tickets_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *PrintJobReport) GetJobExpandedId() string {
@@ -299,6 +299,131 @@ func (x *PrintJobReport) GetRender() *BinaryJob {
 	return nil
 }
 
+// A network printer that the machine running the print agent is connected to.
+type RemotePrinter struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The printer name as the agent uses it to print: \\server\share.
+	Unc           string `protobuf:"bytes,1,opt,name=unc,proto3" json:"unc,omitempty"`
+	Server        string `protobuf:"bytes,2,opt,name=server,proto3" json:"server,omitempty"`
+	Share         string `protobuf:"bytes,3,opt,name=share,proto3" json:"share,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RemotePrinter) Reset() {
+	*x = RemotePrinter{}
+	mi := &file_tickets_tickets_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RemotePrinter) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RemotePrinter) ProtoMessage() {}
+
+func (x *RemotePrinter) ProtoReflect() protoreflect.Message {
+	mi := &file_tickets_tickets_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RemotePrinter.ProtoReflect.Descriptor instead.
+func (*RemotePrinter) Descriptor() ([]byte, []int) {
+	return file_tickets_tickets_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *RemotePrinter) GetUnc() string {
+	if x != nil {
+		return x.Unc
+	}
+	return ""
+}
+
+func (x *RemotePrinter) GetServer() string {
+	if x != nil {
+		return x.Server
+	}
+	return ""
+}
+
+func (x *RemotePrinter) GetShare() string {
+	if x != nil {
+		return x.Share
+	}
+	return ""
+}
+
+// What printers the print agent can print to. Sent at startup and
+// periodically; the latest message from an agent replaces the earlier ones.
+type PrinterList struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Name of the print agent (its machine), to tell several agents apart.
+	Agent            string           `protobuf:"bytes,1,opt,name=agent,proto3" json:"agent,omitempty"`
+	TimestampSeconds int64            `protobuf:"varint,2,opt,name=timestamp_seconds,json=timestampSeconds,proto3" json:"timestamp_seconds,omitempty"`
+	Printers         []*RemotePrinter `protobuf:"bytes,3,rep,name=printers,proto3" json:"printers,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *PrinterList) Reset() {
+	*x = PrinterList{}
+	mi := &file_tickets_tickets_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrinterList) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrinterList) ProtoMessage() {}
+
+func (x *PrinterList) ProtoReflect() protoreflect.Message {
+	mi := &file_tickets_tickets_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrinterList.ProtoReflect.Descriptor instead.
+func (*PrinterList) Descriptor() ([]byte, []int) {
+	return file_tickets_tickets_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *PrinterList) GetAgent() string {
+	if x != nil {
+		return x.Agent
+	}
+	return ""
+}
+
+func (x *PrinterList) GetTimestampSeconds() int64 {
+	if x != nil {
+		return x.TimestampSeconds
+	}
+	return 0
+}
+
+func (x *PrinterList) GetPrinters() []*RemotePrinter {
+	if x != nil {
+		return x.Printers
+	}
+	return nil
+}
+
 type TexJob struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Printer       string                 `protobuf:"bytes,1,opt,name=printer,proto3" json:"printer,omitempty"`
@@ -310,7 +435,7 @@ type TexJob struct {
 
 func (x *TexJob) Reset() {
 	*x = TexJob{}
-	mi := &file_tickets_proto_msgTypes[2]
+	mi := &file_tickets_tickets_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -322,7 +447,7 @@ func (x *TexJob) String() string {
 func (*TexJob) ProtoMessage() {}
 
 func (x *TexJob) ProtoReflect() protoreflect.Message {
-	mi := &file_tickets_proto_msgTypes[2]
+	mi := &file_tickets_tickets_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -335,7 +460,7 @@ func (x *TexJob) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TexJob.ProtoReflect.Descriptor instead.
 func (*TexJob) Descriptor() ([]byte, []int) {
-	return file_tickets_proto_rawDescGZIP(), []int{2}
+	return file_tickets_tickets_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *TexJob) GetPrinter() string {
@@ -378,7 +503,7 @@ type BinaryJob struct {
 
 func (x *BinaryJob) Reset() {
 	*x = BinaryJob{}
-	mi := &file_tickets_proto_msgTypes[3]
+	mi := &file_tickets_tickets_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -390,7 +515,7 @@ func (x *BinaryJob) String() string {
 func (*BinaryJob) ProtoMessage() {}
 
 func (x *BinaryJob) ProtoReflect() protoreflect.Message {
-	mi := &file_tickets_proto_msgTypes[3]
+	mi := &file_tickets_tickets_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -403,7 +528,7 @@ func (x *BinaryJob) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BinaryJob.ProtoReflect.Descriptor instead.
 func (*BinaryJob) Descriptor() ([]byte, []int) {
-	return file_tickets_proto_rawDescGZIP(), []int{3}
+	return file_tickets_tickets_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *BinaryJob) GetPrinter() string {
@@ -478,7 +603,7 @@ type IdName struct {
 
 func (x *IdName) Reset() {
 	*x = IdName{}
-	mi := &file_tickets_proto_msgTypes[4]
+	mi := &file_tickets_tickets_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -490,7 +615,7 @@ func (x *IdName) String() string {
 func (*IdName) ProtoMessage() {}
 
 func (x *IdName) ProtoReflect() protoreflect.Message {
-	mi := &file_tickets_proto_msgTypes[4]
+	mi := &file_tickets_tickets_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -503,7 +628,7 @@ func (x *IdName) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IdName.ProtoReflect.Descriptor instead.
 func (*IdName) Descriptor() ([]byte, []int) {
-	return file_tickets_proto_rawDescGZIP(), []int{4}
+	return file_tickets_tickets_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *IdName) GetId() uint32 {
@@ -530,7 +655,7 @@ type Computer struct {
 
 func (x *Computer) Reset() {
 	*x = Computer{}
-	mi := &file_tickets_proto_msgTypes[5]
+	mi := &file_tickets_tickets_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -542,7 +667,7 @@ func (x *Computer) String() string {
 func (*Computer) ProtoMessage() {}
 
 func (x *Computer) ProtoReflect() protoreflect.Message {
-	mi := &file_tickets_proto_msgTypes[5]
+	mi := &file_tickets_tickets_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -555,7 +680,7 @@ func (x *Computer) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Computer.ProtoReflect.Descriptor instead.
 func (*Computer) Descriptor() ([]byte, []int) {
-	return file_tickets_proto_rawDescGZIP(), []int{5}
+	return file_tickets_tickets_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *Computer) GetId() string {
@@ -589,7 +714,7 @@ type Ticket struct {
 
 func (x *Ticket) Reset() {
 	*x = Ticket{}
-	mi := &file_tickets_proto_msgTypes[6]
+	mi := &file_tickets_tickets_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -601,7 +726,7 @@ func (x *Ticket) String() string {
 func (*Ticket) ProtoMessage() {}
 
 func (x *Ticket) ProtoReflect() protoreflect.Message {
-	mi := &file_tickets_proto_msgTypes[6]
+	mi := &file_tickets_tickets_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -614,7 +739,7 @@ func (x *Ticket) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Ticket.ProtoReflect.Descriptor instead.
 func (*Ticket) Descriptor() ([]byte, []int) {
-	return file_tickets_proto_rawDescGZIP(), []int{6}
+	return file_tickets_tickets_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *Ticket) GetContest() *IdName {
@@ -693,7 +818,7 @@ type Ticket_Submit struct {
 
 func (x *Ticket_Submit) Reset() {
 	*x = Ticket_Submit{}
-	mi := &file_tickets_proto_msgTypes[7]
+	mi := &file_tickets_tickets_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -705,7 +830,7 @@ func (x *Ticket_Submit) String() string {
 func (*Ticket_Submit) ProtoMessage() {}
 
 func (x *Ticket_Submit) ProtoReflect() protoreflect.Message {
-	mi := &file_tickets_proto_msgTypes[7]
+	mi := &file_tickets_tickets_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -718,7 +843,7 @@ func (x *Ticket_Submit) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Ticket_Submit.ProtoReflect.Descriptor instead.
 func (*Ticket_Submit) Descriptor() ([]byte, []int) {
-	return file_tickets_proto_rawDescGZIP(), []int{6, 0}
+	return file_tickets_tickets_proto_rawDescGZIP(), []int{8, 0}
 }
 
 func (x *Ticket_Submit) GetSubmitNumber() uint32 {
@@ -766,7 +891,7 @@ type Ticket_Problem struct {
 
 func (x *Ticket_Problem) Reset() {
 	*x = Ticket_Problem{}
-	mi := &file_tickets_proto_msgTypes[8]
+	mi := &file_tickets_tickets_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -778,7 +903,7 @@ func (x *Ticket_Problem) String() string {
 func (*Ticket_Problem) ProtoMessage() {}
 
 func (x *Ticket_Problem) ProtoReflect() protoreflect.Message {
-	mi := &file_tickets_proto_msgTypes[8]
+	mi := &file_tickets_tickets_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -791,7 +916,7 @@ func (x *Ticket_Problem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Ticket_Problem.ProtoReflect.Descriptor instead.
 func (*Ticket_Problem) Descriptor() ([]byte, []int) {
-	return file_tickets_proto_rawDescGZIP(), []int{6, 1}
+	return file_tickets_tickets_proto_rawDescGZIP(), []int{8, 1}
 }
 
 func (x *Ticket_Problem) GetId() string {
@@ -818,7 +943,7 @@ type Ticket_Submit_School struct {
 
 func (x *Ticket_Submit_School) Reset() {
 	*x = Ticket_Submit_School{}
-	mi := &file_tickets_proto_msgTypes[9]
+	mi := &file_tickets_tickets_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -830,7 +955,7 @@ func (x *Ticket_Submit_School) String() string {
 func (*Ticket_Submit_School) ProtoMessage() {}
 
 func (x *Ticket_Submit_School) ProtoReflect() protoreflect.Message {
-	mi := &file_tickets_proto_msgTypes[9]
+	mi := &file_tickets_tickets_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -843,7 +968,7 @@ func (x *Ticket_Submit_School) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Ticket_Submit_School.ProtoReflect.Descriptor instead.
 func (*Ticket_Submit_School) Descriptor() ([]byte, []int) {
-	return file_tickets_proto_rawDescGZIP(), []int{6, 0, 0}
+	return file_tickets_tickets_proto_rawDescGZIP(), []int{8, 0, 0}
 }
 
 func (x *Ticket_Submit_School) GetTestsTaken() uint32 {
@@ -870,7 +995,7 @@ type Ticket_Submit_ACM struct {
 
 func (x *Ticket_Submit_ACM) Reset() {
 	*x = Ticket_Submit_ACM{}
-	mi := &file_tickets_proto_msgTypes[10]
+	mi := &file_tickets_tickets_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -882,7 +1007,7 @@ func (x *Ticket_Submit_ACM) String() string {
 func (*Ticket_Submit_ACM) ProtoMessage() {}
 
 func (x *Ticket_Submit_ACM) ProtoReflect() protoreflect.Message {
-	mi := &file_tickets_proto_msgTypes[10]
+	mi := &file_tickets_tickets_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -895,7 +1020,7 @@ func (x *Ticket_Submit_ACM) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Ticket_Submit_ACM.ProtoReflect.Descriptor instead.
 func (*Ticket_Submit_ACM) Descriptor() ([]byte, []int) {
-	return file_tickets_proto_rawDescGZIP(), []int{6, 0, 1}
+	return file_tickets_tickets_proto_rawDescGZIP(), []int{8, 0, 1}
 }
 
 func (x *Ticket_Submit_ACM) GetResult() string {
@@ -912,11 +1037,11 @@ func (x *Ticket_Submit_ACM) GetTestId() uint32 {
 	return 0
 }
 
-var File_tickets_proto protoreflect.FileDescriptor
+var File_tickets_tickets_proto protoreflect.FileDescriptor
 
-const file_tickets_proto_rawDesc = "" +
+const file_tickets_tickets_proto_rawDesc = "" +
 	"\n" +
-	"\rtickets.proto\x12\atickets\"\xd6\x02\n" +
+	"\x15tickets/tickets.proto\x12\atickets\"\xd6\x02\n" +
 	"\bPrintJob\x12\x1a\n" +
 	"\bfilename\x18\x01 \x01(\tR\bfilename\x12)\n" +
 	"\acontest\x18\x02 \x01(\v2\x0f.tickets.IdNameR\acontest\x12#\n" +
@@ -941,7 +1066,15 @@ const file_tickets_proto_rawDesc = "" +
 	"\x06render\x18\t \x01(\v2\x12.tickets.BinaryJobR\x06render\" \n" +
 	"\x05Stage\x12\t\n" +
 	"\x05FINAL\x10\x00\x12\f\n" +
-	"\bRENDERED\x10\x01\"M\n" +
+	"\bRENDERED\x10\x01\"O\n" +
+	"\rRemotePrinter\x12\x10\n" +
+	"\x03unc\x18\x01 \x01(\tR\x03unc\x12\x16\n" +
+	"\x06server\x18\x02 \x01(\tR\x06server\x12\x14\n" +
+	"\x05share\x18\x03 \x01(\tR\x05share\"\x84\x01\n" +
+	"\vPrinterList\x12\x14\n" +
+	"\x05agent\x18\x01 \x01(\tR\x05agent\x12+\n" +
+	"\x11timestamp_seconds\x18\x02 \x01(\x03R\x10timestampSeconds\x122\n" +
+	"\bprinters\x18\x03 \x03(\v2\x16.tickets.RemotePrinterR\bprinters\"M\n" +
 	"\x06TexJob\x12\x18\n" +
 	"\aprinter\x18\x01 \x01(\tR\aprinter\x12\x12\n" +
 	"\x04data\x18\x02 \x01(\fR\x04data\x12\x15\n" +
@@ -988,61 +1121,64 @@ const file_tickets_proto_rawDesc = "" +
 	"\x04name\x18\x02 \x01(\tR\x04nameB(Z&github.com/contester/printing3/ticketsb\x06proto3"
 
 var (
-	file_tickets_proto_rawDescOnce sync.Once
-	file_tickets_proto_rawDescData []byte
+	file_tickets_tickets_proto_rawDescOnce sync.Once
+	file_tickets_tickets_proto_rawDescData []byte
 )
 
-func file_tickets_proto_rawDescGZIP() []byte {
-	file_tickets_proto_rawDescOnce.Do(func() {
-		file_tickets_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_tickets_proto_rawDesc), len(file_tickets_proto_rawDesc)))
+func file_tickets_tickets_proto_rawDescGZIP() []byte {
+	file_tickets_tickets_proto_rawDescOnce.Do(func() {
+		file_tickets_tickets_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_tickets_tickets_proto_rawDesc), len(file_tickets_tickets_proto_rawDesc)))
 	})
-	return file_tickets_proto_rawDescData
+	return file_tickets_tickets_proto_rawDescData
 }
 
-var file_tickets_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_tickets_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
-var file_tickets_proto_goTypes = []any{
+var file_tickets_tickets_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_tickets_tickets_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_tickets_tickets_proto_goTypes = []any{
 	(PrintJobReport_Stage)(0),    // 0: tickets.PrintJobReport.Stage
 	(*PrintJob)(nil),             // 1: tickets.PrintJob
 	(*PrintJobReport)(nil),       // 2: tickets.PrintJobReport
-	(*TexJob)(nil),               // 3: tickets.TexJob
-	(*BinaryJob)(nil),            // 4: tickets.BinaryJob
-	(*IdName)(nil),               // 5: tickets.IdName
-	(*Computer)(nil),             // 6: tickets.Computer
-	(*Ticket)(nil),               // 7: tickets.Ticket
-	(*Ticket_Submit)(nil),        // 8: tickets.Ticket.Submit
-	(*Ticket_Problem)(nil),       // 9: tickets.Ticket.Problem
-	(*Ticket_Submit_School)(nil), // 10: tickets.Ticket.Submit.School
-	(*Ticket_Submit_ACM)(nil),    // 11: tickets.Ticket.Submit.ACM
+	(*RemotePrinter)(nil),        // 3: tickets.RemotePrinter
+	(*PrinterList)(nil),          // 4: tickets.PrinterList
+	(*TexJob)(nil),               // 5: tickets.TexJob
+	(*BinaryJob)(nil),            // 6: tickets.BinaryJob
+	(*IdName)(nil),               // 7: tickets.IdName
+	(*Computer)(nil),             // 8: tickets.Computer
+	(*Ticket)(nil),               // 9: tickets.Ticket
+	(*Ticket_Submit)(nil),        // 10: tickets.Ticket.Submit
+	(*Ticket_Problem)(nil),       // 11: tickets.Ticket.Problem
+	(*Ticket_Submit_School)(nil), // 12: tickets.Ticket.Submit.School
+	(*Ticket_Submit_ACM)(nil),    // 13: tickets.Ticket.Submit.ACM
 }
-var file_tickets_proto_depIdxs = []int32{
-	5,  // 0: tickets.PrintJob.contest:type_name -> tickets.IdName
-	5,  // 1: tickets.PrintJob.team:type_name -> tickets.IdName
-	6,  // 2: tickets.PrintJob.computer:type_name -> tickets.Computer
-	5,  // 3: tickets.PrintJob.area:type_name -> tickets.IdName
+var file_tickets_tickets_proto_depIdxs = []int32{
+	7,  // 0: tickets.PrintJob.contest:type_name -> tickets.IdName
+	7,  // 1: tickets.PrintJob.team:type_name -> tickets.IdName
+	8,  // 2: tickets.PrintJob.computer:type_name -> tickets.Computer
+	7,  // 3: tickets.PrintJob.area:type_name -> tickets.IdName
 	0,  // 4: tickets.PrintJobReport.stage:type_name -> tickets.PrintJobReport.Stage
-	4,  // 5: tickets.PrintJobReport.render:type_name -> tickets.BinaryJob
-	5,  // 6: tickets.Ticket.contest:type_name -> tickets.IdName
-	5,  // 7: tickets.Ticket.team:type_name -> tickets.IdName
-	5,  // 8: tickets.Ticket.area:type_name -> tickets.IdName
-	6,  // 9: tickets.Ticket.computer:type_name -> tickets.Computer
-	9,  // 10: tickets.Ticket.problem:type_name -> tickets.Ticket.Problem
-	8,  // 11: tickets.Ticket.submit:type_name -> tickets.Ticket.Submit
-	10, // 12: tickets.Ticket.Submit.school:type_name -> tickets.Ticket.Submit.School
-	11, // 13: tickets.Ticket.Submit.acm:type_name -> tickets.Ticket.Submit.ACM
-	14, // [14:14] is the sub-list for method output_type
-	14, // [14:14] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	6,  // 5: tickets.PrintJobReport.render:type_name -> tickets.BinaryJob
+	3,  // 6: tickets.PrinterList.printers:type_name -> tickets.RemotePrinter
+	7,  // 7: tickets.Ticket.contest:type_name -> tickets.IdName
+	7,  // 8: tickets.Ticket.team:type_name -> tickets.IdName
+	7,  // 9: tickets.Ticket.area:type_name -> tickets.IdName
+	8,  // 10: tickets.Ticket.computer:type_name -> tickets.Computer
+	11, // 11: tickets.Ticket.problem:type_name -> tickets.Ticket.Problem
+	10, // 12: tickets.Ticket.submit:type_name -> tickets.Ticket.Submit
+	12, // 13: tickets.Ticket.Submit.school:type_name -> tickets.Ticket.Submit.School
+	13, // 14: tickets.Ticket.Submit.acm:type_name -> tickets.Ticket.Submit.ACM
+	15, // [15:15] is the sub-list for method output_type
+	15, // [15:15] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
-func init() { file_tickets_proto_init() }
-func file_tickets_proto_init() {
-	if File_tickets_proto != nil {
+func init() { file_tickets_tickets_proto_init() }
+func file_tickets_tickets_proto_init() {
+	if File_tickets_tickets_proto != nil {
 		return
 	}
-	file_tickets_proto_msgTypes[3].OneofWrappers = []any{
+	file_tickets_tickets_proto_msgTypes[5].OneofWrappers = []any{
 		(*BinaryJob_Ps)(nil),
 		(*BinaryJob_Pdf)(nil),
 	}
@@ -1050,18 +1186,18 @@ func file_tickets_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_tickets_proto_rawDesc), len(file_tickets_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_tickets_tickets_proto_rawDesc), len(file_tickets_tickets_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   11,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_tickets_proto_goTypes,
-		DependencyIndexes: file_tickets_proto_depIdxs,
-		EnumInfos:         file_tickets_proto_enumTypes,
-		MessageInfos:      file_tickets_proto_msgTypes,
+		GoTypes:           file_tickets_tickets_proto_goTypes,
+		DependencyIndexes: file_tickets_tickets_proto_depIdxs,
+		EnumInfos:         file_tickets_tickets_proto_enumTypes,
+		MessageInfos:      file_tickets_tickets_proto_msgTypes,
 	}.Build()
-	File_tickets_proto = out.File
-	file_tickets_proto_goTypes = nil
-	file_tickets_proto_depIdxs = nil
+	File_tickets_tickets_proto = out.File
+	file_tickets_tickets_proto_goTypes = nil
+	file_tickets_tickets_proto_depIdxs = nil
 }
