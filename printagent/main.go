@@ -225,6 +225,28 @@ type sconfig struct {
 	PrintersQueue string
 	// PrintersIntervalSeconds is how often that list is sent. Default 300.
 	PrintersIntervalSeconds int
+	// Prefetch is how many unfinished jobs the broker may hand to the agent.
+	// Jobs waiting behind a stuck printer count, so keep it larger than the
+	// longest backlog one printer can have. Default 100.
+	Prefetch int
+}
+
+func (s *sconfig) prefetch() int {
+	if s.Prefetch > 0 {
+		return s.Prefetch
+	}
+	return 100
+}
+
+// printerOf is the printer a queued job is for; jobs of one printer are
+// printed one after another. A job that can't be read gets its own lane
+// and is dropped by processIncoming.
+func printerOf(msg *stomp.Message) string {
+	var job tpb.BinaryJob
+	if err := proto.Unmarshal(msg.Body, &job); err != nil {
+		return ""
+	}
+	return job.GetPrinter()
 }
 
 var (
@@ -264,7 +286,9 @@ func main() {
 	}
 	defer conn.MustDisconnect()
 
-	sub, err := tools.SubscribeAndProcess(ctx, conn, srv.BinaryQueue, srv.processIncoming)
+	// Jobs for different printers are printed concurrently, so that a stuck
+	// printer only holds up its own jobs.
+	sub, err := tools.SubscribeAndProcessKeyed(ctx, conn, srv.BinaryQueue, srv.prefetch(), printerOf, srv.processIncoming)
 	if err != nil {
 		log.Fatal(err)
 	}

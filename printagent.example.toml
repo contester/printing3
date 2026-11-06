@@ -25,6 +25,10 @@ failurequeue = "contester.printingresult"
 # jobtimeoutseconds = 300
 # Set to true to skip the printer status check (offline etc.) before printing.
 # skippreflight = false
+# Jobs for different printers are printed at the same time; a stuck printer only
+# holds up its own jobs. prefetch is how many unfinished jobs the broker may hand
+# out, including those waiting behind a stuck printer (default 100).
+# prefetch = 100
 # Name of this agent in the list of remote printers that is sent to the web
 # application (default: the host name). The list is sent to printersqueue
 # (default contester.printers) every printersintervalseconds (default 300).
