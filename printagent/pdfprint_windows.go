@@ -21,6 +21,9 @@ var (
 	procStartPage    = gdi32.NewProc("StartPage")
 	procEndPage      = gdi32.NewProc("EndPage")
 	procGetDeviceCap = gdi32.NewProc("GetDeviceCaps")
+
+	procStretchDIBits     = gdi32.NewProc("StretchDIBits")
+	procSetStretchBltMode = gdi32.NewProc("SetStretchBltMode")
 )
 
 const (
@@ -30,7 +33,24 @@ const (
 	devLogPixelY = 90
 
 	fpdfPrinting = 0x800
+
+	stretchColorOnColor = 3 // COLORONCOLOR: pixels are repeated or dropped, not blended
+	dibRGBColors        = 0
+	srcCopy             = 0x00CC0020
 )
+
+// BITMAPINFOHEADER
+type bitmapInfoHeader struct {
+	Size          uint32
+	Width, Height int32
+	Planes, Bits  uint16
+	Compression   uint32
+	SizeImage     uint32
+	XPelsPerMeter int32
+	YPelsPerMeter int32
+	ClrUsed       uint32
+	ClrImportant  uint32
+}
 
 // DOCINFOW
 type docInfo struct {
@@ -56,11 +76,21 @@ type pdfium struct {
 	closePage          *windows.LazyProc
 	renderPage         *windows.LazyProc
 	getLastError       *windows.LazyProc
+
+	createBitmap     *windows.LazyProc
+	fillBitmap       *windows.LazyProc
+	bitmapBuffer     *windows.LazyProc
+	bitmapStride     *windows.LazyProc
+	destroyBitmap    *windows.LazyProc
+	renderPageBitmap *windows.LazyProc
+
+	// rasterDPI > 0: pages are rendered into a bitmap and sent as one image.
+	rasterDPI int
 }
 
 // newPDFPrinter loads pdfium.dll. A relative path is looked up next to the
 // executable, since a service doesn't start in its own directory.
-func newPDFPrinter(dll string) (pdfPrinter, error) {
+func newPDFPrinter(dll string, rasterDPI int) (pdfPrinter, error) {
 	if !filepath.IsAbs(dll) {
 		exe, err := os.Executable()
 		if err != nil {
@@ -68,7 +98,7 @@ func newPDFPrinter(dll string) (pdfPrinter, error) {
 		}
 		dll = filepath.Join(filepath.Dir(exe), dll)
 	}
-	p := &pdfium{dll: windows.NewLazyDLL(dll)}
+	p := &pdfium{dll: windows.NewLazyDLL(dll), rasterDPI: rasterDPI}
 	if err := p.dll.Load(); err != nil {
 		return nil, fmt.Errorf("can't load %s: %w", dll, err)
 	}
@@ -80,6 +110,12 @@ func newPDFPrinter(dll string) (pdfPrinter, error) {
 	p.closePage = p.dll.NewProc("FPDF_ClosePage")
 	p.renderPage = p.dll.NewProc("FPDF_RenderPage")
 	p.getLastError = p.dll.NewProc("FPDF_GetLastError")
+	p.createBitmap = p.dll.NewProc("FPDFBitmap_Create")
+	p.fillBitmap = p.dll.NewProc("FPDFBitmap_FillRect")
+	p.bitmapBuffer = p.dll.NewProc("FPDFBitmap_GetBuffer")
+	p.bitmapStride = p.dll.NewProc("FPDFBitmap_GetStride")
+	p.destroyBitmap = p.dll.NewProc("FPDFBitmap_Destroy")
+	p.renderPageBitmap = p.dll.NewProc("FPDF_RenderPageBitmap")
 	p.dll.NewProc("FPDF_InitLibrary").Call()
 	return p, nil
 }
@@ -160,11 +196,49 @@ func (p *pdfium) renderPages(dc, doc uintptr, pages int) error {
 			p.closePage.Call(page)
 			return fmt.Errorf("StartPage %d: %w", i+1, e)
 		}
-		p.renderPage.Call(dc, page, uintptr(x), uintptr(y), uintptr(w), uintptr(h), 0, fpdfPrinting)
+		if p.rasterDPI > 0 {
+			if err := p.renderRaster(dc, page, sz, min(dpiX, dpiY), x, y, w, h); err != nil {
+				p.closePage.Call(page)
+				return fmt.Errorf("page %d: %w", i+1, err)
+			}
+		} else {
+			p.renderPage.Call(dc, page, uintptr(x), uintptr(y), uintptr(w), uintptr(h), 0, fpdfPrinting)
+		}
 		p.closePage.Call(page)
 		if r, _, e := procEndPage.Call(dc); int32(r) <= 0 {
 			return fmt.Errorf("EndPage %d: %w", i+1, e)
 		}
+	}
+	return nil
+}
+
+// renderRaster renders the page into a bitmap and sends that to the printer as
+// one image, into the rectangle x, y, w, h. Some drivers crash on the drawing
+// calls PDFium makes (text, clips, images) but cope with a plain image.
+func (p *pdfium) renderRaster(dc, page uintptr, sz sizeF, printerDPI, x, y, w, h int) error {
+	bw, bh := bitmapSize(float64(sz.Width), float64(sz.Height), rasterDPI(p.rasterDPI, printerDPI))
+	// No alpha channel: 4 bytes a pixel, blue first, the last one unused.
+	bmp, _, _ := p.createBitmap.Call(uintptr(bw), uintptr(bh), 0)
+	if bmp == 0 {
+		return fmt.Errorf("can't make a %dx%d bitmap", bw, bh)
+	}
+	defer p.destroyBitmap.Call(bmp)
+	p.fillBitmap.Call(bmp, 0, 0, uintptr(bw), uintptr(bh), 0xFFFFFFFF)
+	p.renderPageBitmap.Call(bmp, page, 0, 0, uintptr(bw), uintptr(bh), 0, fpdfPrinting)
+
+	buf, _, _ := p.bitmapBuffer.Call(bmp)
+	stride, _, _ := p.bitmapStride.Call(bmp)
+	if buf == 0 || int(int32(stride)) != bw*4 {
+		return fmt.Errorf("unexpected bitmap layout: stride %d for width %d", int32(stride), bw)
+	}
+	// A negative height makes the image top-down, as PDFium wrote it.
+	bi := bitmapInfoHeader{Size: uint32(unsafe.Sizeof(bitmapInfoHeader{})), Width: int32(bw), Height: -int32(bh), Planes: 1, Bits: 32}
+	procSetStretchBltMode.Call(dc, stretchColorOnColor)
+	r, _, e := procStretchDIBits.Call(dc, uintptr(x), uintptr(y), uintptr(w), uintptr(h),
+		0, 0, uintptr(bw), uintptr(bh), buf, uintptr(unsafe.Pointer(&bi)), dibRGBColors, srcCopy)
+	runtime.KeepAlive(&bi)
+	if int32(r) <= 0 {
+		return fmt.Errorf("StretchDIBits: %w", e)
 	}
 	return nil
 }

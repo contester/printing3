@@ -3,6 +3,10 @@
 # printagent.exe. PDFium comes in win-x64 builds from
 # https://github.com/bblanchon/pdfium-binaries and ships in this package.
 # pdfium = "pdfium.dll"
+# Render PDF pages into a bitmap of this resolution and print that as an image,
+# instead of drawing on the printer. For printers whose driver crashes on PDFium's
+# drawing (HP LaserJet P1102 does). Default 0: draw on the printer.
+# pdfrasterdpi = 300
 # Directory for the PostScript files that are being printed.
 workdir = "c:\\a\\w"
 # gsprint.exe from Ghostgum/GSview. A bare name is looked up in PATH.

@@ -134,7 +134,7 @@ func (s *server) pdfPrinter() (pdfPrinter, error) {
 		if dll == "" {
 			dll = "pdfium.dll"
 		}
-		s.pdf, s.pdfErr = newPDFPrinter(dll)
+		s.pdf, s.pdfErr = newPDFPrinter(dll, s.PdfRasterDPI)
 	})
 	return s.pdf, s.pdfErr
 }
@@ -198,7 +198,12 @@ type sconfig struct {
 	Workdir, Gsprint string
 	// Pdfium is the path to pdfium.dll, used for PDF jobs. A relative path
 	// is looked up next to the executable. Default pdfium.dll.
-	Pdfium                    string
+	Pdfium string
+	// PdfRasterDPI, if above 0, makes the agent render every PDF page into a
+	// bitmap of this resolution (not finer than the printer) and send that as
+	// an image, instead of letting PDFium draw on the printer. For drivers that
+	// crash on the drawing. 300 is a good value. Default 0.
+	PdfRasterDPI              int
 	StompDSN                  string
 	BinaryQueue, FailureQueue string
 
