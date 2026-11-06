@@ -82,6 +82,8 @@ tar xzf %{SOURCE1} -C pdfium bin/pdfium.dll LICENSE
 %build
 %gobuild -o bin/printing3-busyprint github.com/contester/%{name}/busyprint
 GOOS=windows GOARCH=amd64 go build -o bin/printagent-amd64.exe github.com/contester/%{name}/printagent
+# The HP LaserJet P1102 driver, which runs inside printagent, crashes on addresses above 4 GB; see tools/lowva.
+go run github.com/contester/%{name}/tools/lowva bin/printagent-amd64.exe
 
 %install
 %{__install} -v -D -t %{buildroot}%{_bindir} bin/printing3-busyprint
