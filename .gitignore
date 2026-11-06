@@ -71,3 +71,7 @@ crashlytics-build.properties
 fabric.properties
 
 .gitignore
+
+# go build in a command directory leaves the binary next to the sources
+/printagent/printagent
+/busyprint/busyprint
