@@ -4,6 +4,6 @@ package main
 
 import "errors"
 
-func newPDFPrinter(dll string, rasterDPI int) (pdfPrinter, error) {
+func newPDFPrinter(dll string, rasterDPI int, rasterMono bool) (pdfPrinter, error) {
 	return nil, errors.New("pdf printing is only available on Windows")
 }

@@ -7,6 +7,10 @@
 # instead of drawing on the printer. For printers whose driver crashes on PDFium's
 # drawing (HP LaserJet P1102 does). Default 0: draw on the printer.
 # pdfrasterdpi = 300
+# With pdfrasterdpi: send 1 bit (dithered) images instead of color ones, even if
+# the printer does not report being black and white. Black and white printers
+# get them anyway.
+# pdfrastermono = false
 # Directory for the PostScript files that are being printed.
 workdir = "c:\\a\\w"
 # gsprint.exe from Ghostgum/GSview. A bare name is looked up in PATH.

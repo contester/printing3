@@ -134,7 +134,7 @@ func (s *server) pdfPrinter() (pdfPrinter, error) {
 		if dll == "" {
 			dll = "pdfium.dll"
 		}
-		s.pdf, s.pdfErr = newPDFPrinter(dll, s.PdfRasterDPI)
+		s.pdf, s.pdfErr = newPDFPrinter(dll, s.PdfRasterDPI, s.PdfRasterMono)
 	})
 	return s.pdf, s.pdfErr
 }
@@ -203,7 +203,11 @@ type sconfig struct {
 	// bitmap of this resolution (not finer than the printer) and send that as
 	// an image, instead of letting PDFium draw on the printer. For drivers that
 	// crash on the drawing. 300 is a good value. Default 0.
-	PdfRasterDPI              int
+	PdfRasterDPI int
+	// PdfRasterMono sends the bitmaps as 1 bit images that the agent dithers
+	// itself, even to printers that don't say they are black and white.
+	// Printers that say they have 1 bit per pixel always get them.
+	PdfRasterMono             bool
 	StompDSN                  string
 	BinaryQueue, FailureQueue string
 

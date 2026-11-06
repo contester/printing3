@@ -47,3 +47,54 @@ func TestBitmapSize(t *testing.T) {
 		t.Errorf("tiny page: %dx%d", w, h)
 	}
 }
+
+// bgrx makes a w x h bitmap of one gray level.
+func bgrx(w, h int, gray byte) []byte {
+	b := make([]byte, w*h*4)
+	for i := 0; i < w*h; i++ {
+		b[i*4], b[i*4+1], b[i*4+2] = gray, gray, gray
+	}
+	return b
+}
+
+func ones(bits []byte, w, h int) int {
+	rowBytes := (w + 31) / 32 * 4
+	n := 0
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			if bits[y*rowBytes+x/8]&(0x80>>(x%8)) != 0 {
+				n++
+			}
+		}
+	}
+	return n
+}
+
+func TestDitherTo1bpp(t *testing.T) {
+	const w, h = 70, 40 // not a multiple of 8, to see the padding
+	if got := len(ditherTo1bpp(bgrx(w, h, 255), w, h)); got != 12*h {
+		t.Errorf("size %d, want %d", got, 12*h)
+	}
+	if n := ones(ditherTo1bpp(bgrx(w, h, 255), w, h), w, h); n != w*h {
+		t.Errorf("white: %d of %d pixels set", n, w*h)
+	}
+	if n := ones(ditherTo1bpp(bgrx(w, h, 0), w, h), w, h); n != 0 {
+		t.Errorf("black: %d pixels set", n)
+	}
+	// Half gray: about half of the pixels.
+	if n := ones(ditherTo1bpp(bgrx(w, h, 128), w, h), w, h); n < w*h*45/100 || n > w*h*55/100 {
+		t.Errorf("gray 128: %d of %d pixels set", n, w*h)
+	}
+	// Black text on white keeps its shape: a black column stays black.
+	img := bgrx(w, h, 255)
+	for y := 0; y < h; y++ {
+		img[(y*w+10)*4], img[(y*w+10)*4+1], img[(y*w+10)*4+2] = 0, 0, 0
+	}
+	bits := ditherTo1bpp(img, w, h)
+	rowBytes := (w + 31) / 32 * 4
+	for y := 0; y < h; y++ {
+		if bits[y*rowBytes+10/8]&(0x80>>(10%8)) != 0 || bits[y*rowBytes+9/8]&(0x80>>(9%8)) == 0 {
+			t.Fatalf("row %d: the black column is not a clean edge", y)
+		}
+	}
+}
