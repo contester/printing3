@@ -23,6 +23,8 @@ import (
 type server struct {
 	sconfig
 	spool spooler
+	// alerts is nil until the connection is up (and in tests).
+	alerts *alertMonitor
 
 	pdfOnce sync.Once
 	pdf     pdfPrinter
@@ -56,6 +58,9 @@ func (s *server) print(printerName, docName string, submit func() (uint32, error
 			return printResult{}, fmt.Errorf("not sending job to %q: %s", printerName, problem)
 		}
 	}
+
+	s.alerts.begin(printerName)
+	defer s.alerts.end(printerName)
 
 	baseline, err := s.spool.Jobs(printerName)
 	if err != nil {
@@ -225,6 +230,11 @@ type sconfig struct {
 	PrintersQueue string
 	// PrintersIntervalSeconds is how often that list is sent. Default 300.
 	PrintersIntervalSeconds int
+	// AlertsQueue is where printer problems go. Default contester.printeralerts.
+	AlertsQueue string
+	// AlertGraceSeconds is how long a printer has to be unable to print
+	// before anyone is told. Default 20.
+	AlertGraceSeconds int
 	// Prefetch is how many unfinished jobs the broker may hand to the agent.
 	// Jobs waiting behind a stuck printer count, so keep it larger than the
 	// longest backlog one printer can have. Default 100.
@@ -285,6 +295,9 @@ func main() {
 		log.Fatal(err)
 	}
 	defer conn.MustDisconnect()
+
+	// Before the first job, which reads srv.alerts.
+	srv.startAlerts(ctx, conn)
 
 	// Jobs for different printers are printed concurrently, so that a stuck
 	// printer only holds up its own jobs.

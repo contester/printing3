@@ -29,6 +29,12 @@ failurequeue = "contester.printingresult"
 # holds up its own jobs. prefetch is how many unfinished jobs the broker may hand
 # out, including those waiting behind a stuck printer (default 100).
 # prefetch = 100
+# A printer that has our jobs waiting but can't print (out of paper, jam, door
+# open, offline, ...) is reported to alertsqueue (default
+# contester.printeralerts) once that has lasted alertgraceseconds (default 20),
+# and again when it works.
+# alertsqueue = "contester.printeralerts"
+# alertgraceseconds = 20
 # Name of this agent in the list of remote printers that is sent to the web
 # application (default: the host name). The list is sent to printersqueue
 # (default contester.printers) every printersintervalseconds (default 300).

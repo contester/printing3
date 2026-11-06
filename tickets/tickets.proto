@@ -59,6 +59,25 @@ message PrinterList {
     repeated RemotePrinter printers = 3;
 }
 
+// A printer that has jobs waiting stopped being able to print (paper out,
+// jam, offline, ...), or works again. The agent sends one when the condition
+// has lasted a while, and one when it is gone; the web application tells
+// people.
+message PrinterAlert {
+    string agent = 1;
+    // The printer as named in the jobs, e.g. \\server\share.
+    string printer = 2;
+    // true: the printer cannot print; false: it works again.
+    bool open = 3;
+    // What is wrong, for people. Empty when open is false.
+    string condition = 4;
+    // Number of unfinished jobs in the printer's queue.
+    uint32 waiting_jobs = 5;
+    // When the condition was first seen.
+    int64 since_seconds = 6;
+    int64 timestamp_seconds = 7;
+}
+
 message TexJob {
     string printer = 1;
     bytes data = 2;
